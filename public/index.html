@@ -1080,6 +1080,37 @@
     });
   }
 
+  // Lets a founder (or a tutor for themselves) replace a tutor's avatar — the only way to fix
+  // a photo that never set correctly, or to swap in a new one, now that account creation is
+  // the only other place a photo gets set.
+  function openUpdatePhotoModal(id, displayName) {
+    openModal(
+      "<h3>Update photo for " + esc(displayName) + "</h3>" +
+      '<label for="upFile">New photo</label>' +
+      '<input type="file" id="upFile" accept="image/*">' +
+      '<button class="btn" id="upGo" style="margin-top:16px;width:100%">Save photo</button>' +
+      '<div class="msg" id="upMsg"></div>'
+    );
+    document.getElementById("upGo").addEventListener("click", function () {
+      var fileInput = document.getElementById("upFile");
+      var msg = document.getElementById("upMsg");
+      msg.textContent = ""; msg.className = "msg";
+      if (!fileInput.files || !fileInput.files[0]) { msg.textContent = "Choose a photo."; msg.className = "msg error"; return; }
+      fileToDataUrl(fileInput.files[0]).then(function (photoUrl) {
+        return getStore().then(function (s) { return s.setUser(id, { photoDataUrl: photoUrl }); });
+      }).then(function () {
+        if (state.user && state.user.email === id) {
+          state.user.photoDataUrl = null;
+          getStore().then(function (s) { return s.getUser(id); }).then(function (u) {
+            if (u) { state.user.photoDataUrl = u.photoDataUrl; try { sessionStorage.setItem("passframe_portal_user", JSON.stringify(state.user)); } catch (e) {} }
+          });
+        }
+        closeModal();
+        refreshAfterRemoval();
+      }).catch(function (err) { msg.textContent = err.message || "Couldn’t save — check your access."; msg.className = "msg error"; });
+    });
+  }
+
   function loadStudentList() {
     var el = document.getElementById("stuList");
     if (!el) return;
@@ -1197,6 +1228,7 @@
           '<div class="actions-menu"><button class="btn secondary small actions-btn" type="button">Actions ▾</button>' +
             '<div class="actions-dropdown">' +
               '<button class="menu-item" type="button" data-pin-tutor="' + esc(t.email) + '" data-pin-name="' + esc(t.name) + (isSelf ? " (you)" : "") + '">Change PIN</button>' +
+              '<button class="menu-item" type="button" data-photo-tutor="' + esc(t.email) + '" data-photo-name="' + esc(t.name) + (isSelf ? " (you)" : "") + '">Update photo</button>' +
               ((isSelf || t.isFounder) ? "" : '<button class="menu-item danger" type="button" data-remove-tutor="' + esc(t.email) + '" data-remove-name="' + esc(t.name) + '">Remove</button>') +
             "</div>" +
           "</div>" +
@@ -1209,6 +1241,14 @@
           var name = btn.getAttribute("data-pin-name");
           closeAllActionsMenus();
           openChangePinModal(email, name);
+        });
+      });
+      Array.prototype.forEach.call(el.querySelectorAll("[data-photo-tutor]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var email = btn.getAttribute("data-photo-tutor");
+          var name = btn.getAttribute("data-photo-name");
+          closeAllActionsMenus();
+          openUpdatePhotoModal(email, name);
         });
       });
       Array.prototype.forEach.call(el.querySelectorAll("[data-remove-tutor]"), function (btn) {
