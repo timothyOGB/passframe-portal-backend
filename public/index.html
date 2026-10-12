@@ -363,17 +363,11 @@
     { id: "y4pt2-11plus", label: "Year 4 Pt 2" },
     { id: "y5-11plus", label: "Year 5" }
   ];
-  // The Syllabus section (tutor portal only) links straight to PDFs published alongside this
-  // page, rather than going through the assets/db resource store — those files are baked into
-  // the artifact itself, so they load for anyone who can open the portal, with no extra
-  // capability grant or database round-trip involved.
-  var SYLLABUS_FILES = [
-    { title: "Kent Syllabus 2026/27 (Year 4 · Year 4 Pt 2 · Year 5 Accelerated)", href: "syllabus/kent.pdf" },
-    { title: "Bexley Syllabus 2026/27 (Year 4 · Year 4 Pt 2 · Year 5 Accelerated)", href: "syllabus/bexley.pdf" },
-    { title: "Kent & Bexley Combined Syllabus 2026/27 (Year 4 · Year 4 Pt 2 · Year 5 Accelerated)", href: "syllabus/kent-bexley.pdf" }
-  ];
+  // The Syllabus section is founder-managed resources (category "Syllabus" in the same
+  // resources store as the worksheet library), board-scoped via the same BOARDS/
+  // resourceMatchesBoard() pattern used there — see renderSyllabusSection() below.
   // Worksheet Library: per-topic Lesson Worksheet / Homework Worksheet / Mark Scheme, published
-  // as static PDFs alongside this page (same pattern as SYLLABUS_FILES above). Maths and English
+  // as static PDFs alongside this page. Maths and English
   // are fully built; Verbal Reasoning and Non-Verbal Reasoning are still being produced and will
   // populate here the same way once ready — the tab shows an in-progress note until then.
   var WORKSHEET_SUBJECTS = ["Maths", "English", "Verbal Reasoning", "Non-Verbal Reasoning"];
@@ -854,10 +848,7 @@
         '<div id="resUploadArea"></div>' +
         '<div id="resList" style="margin-top:16px"></div>'
       ) +
-      accordionCard("Syllabus",
-        '<p style="color:var(--muted);font-size:0.9rem">The full week-by-week teaching syllabus — Kent, Bexley, and the combined Kent &amp; Bexley track — each covering Year 4, Year 4 Pt 2, and Year 5 Accelerated. Ask PassFrame founders for an updated version if a syllabus changes.</p>' +
-        '<div id="sylList"></div>'
-      ) +
+      accordionCard("Syllabus", syllabusCardHtml()) +
       (u.isFounder ? (
         accordionCard("Manage student accounts",
           '<p style="color:var(--muted);font-size:0.9rem">Add or remove a family’s login — there’s no public sign-up.</p>' +
@@ -919,7 +910,7 @@
     renderTutorRequests();
     loadStudentsCache();
     renderResourceTabs("combined", "Mark schemes");
-    renderSyllabusList();
+    renderSyllabusSection("combined");
     wireTeamsLink();
     if (u.isFounder) {
       wireStudentManagement();
@@ -1985,32 +1976,107 @@
     }).catch(function () { listEl.innerHTML = '<p class="empty">Couldn’t load resources.</p>'; });
   }
 
-  // ---------- SYLLABUS (tutor portal only — static files published alongside this page) ----------
-  // Claude's artifact sandbox blocks plain <a href> navigation/new-tab opens to files served
-  // from inside the page, so each file gets an Actions menu instead (same pattern as the
-  // student/tutor "Remove" menus below): Open previews the PDF in a modal via a blob: URL
-  // (no top-level navigation involved), Save goes through the sanctioned "downloads" capability.
-  function renderSyllabusList() {
+  // ---------- SYLLABUS (founder-managed resources, category "Syllabus", board-scoped) ----------
+  // Shared across the tutor and parent dashboards: same markup both places, same DOM ids
+  // (sylBoardTabs/sylUploadArea/sylList), rendered by renderSyllabusSection() below. Founders
+  // get an upload box and a Remove button per file (same pattern as the worksheet library's
+  // renderResourceTabs/loadResourceList); everyone else gets a view/download-only list.
+  function syllabusCardHtml() {
+    return '<p style="color:var(--muted);font-size:0.9rem">The full week-by-week teaching syllabus — Kent, Bexley, and the combined Kent &amp; Bexley track — each covering Year 4, Year 4 Pt 2, and Year 5 Accelerated.</p>' +
+      '<div class="cat-tabs" id="sylBoardTabs"></div>' +
+      '<div id="sylUploadArea" style="margin-top:12px"></div>' +
+      '<div id="sylList" style="margin-top:12px"></div>';
+  }
+
+  function renderSyllabusSection(activeBoard) {
+    activeBoard = activeBoard || "combined";
+    var boardTabsEl = document.getElementById("sylBoardTabs");
+    if (!boardTabsEl) return;
+    boardTabsEl.innerHTML = BOARDS.map(function (b) {
+      return '<button class="tab-btn" data-syl-board="' + esc(b.id) + '" aria-selected="' + (b.id === activeBoard) + '">' + esc(b.label) + "</button>";
+    }).join("");
+    Array.prototype.forEach.call(boardTabsEl.querySelectorAll("[data-syl-board]"), function (btn) {
+      btn.addEventListener("click", function () { renderSyllabusSection(btn.getAttribute("data-syl-board")); });
+    });
+
+    var uploadArea = document.getElementById("sylUploadArea");
+    if (state.user && state.user.isFounder) {
+      uploadArea.innerHTML =
+        '<label for="sylTitle">Title</label>' +
+        '<input type="text" id="sylTitle" placeholder="e.g. Kent Syllabus 2027/28">' +
+        '<label for="sylBoard">Board</label>' +
+        '<select id="sylBoard">' + BOARDS.map(function (b) { return '<option value="' + b.id + '">' + b.label + "</option>"; }).join("") + "</select>" +
+        '<label for="sylFile">File</label>' +
+        '<input type="file" id="sylFile" accept="application/pdf">' +
+        '<button class="btn small" id="sylUpload" style="margin-top:12px">Upload syllabus</button>' +
+        '<div class="msg" id="sylUploadMsg"></div>';
+      document.getElementById("sylBoard").value = activeBoard;
+      document.getElementById("sylUpload").addEventListener("click", function () {
+        var title = document.getElementById("sylTitle").value.trim();
+        var fileInput = document.getElementById("sylFile");
+        var board = document.getElementById("sylBoard").value;
+        var msg = document.getElementById("sylUploadMsg");
+        msg.textContent = ""; msg.className = "msg";
+        if (!title) { msg.textContent = "Give it a title."; msg.className = "msg error"; return; }
+        if (!fileInput.files || !fileInput.files[0]) { msg.textContent = "Choose a file."; msg.className = "msg error"; return; }
+        var formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        formData.append("title", title);
+        formData.append("category", "Syllabus");
+        formData.append("board", board);
+        getStore().then(function (s) { return s.addResource(formData); })
+          .then(function () {
+            msg.textContent = "Uploaded."; msg.className = "msg ok";
+            document.getElementById("sylTitle").value = "";
+            fileInput.value = "";
+            loadSyllabusList(activeBoard);
+          })
+          .catch(function (err) { msg.textContent = err.message || "Upload failed — check your access."; msg.className = "msg error"; });
+      });
+    } else {
+      uploadArea.innerHTML = '<p class="empty">Only Timothy and David can add or remove syllabus files. You can view and download everything below.</p>';
+    }
+
+    loadSyllabusList(activeBoard);
+  }
+
+  function loadSyllabusList(board) {
     var listEl = document.getElementById("sylList");
     if (!listEl) return;
-    listEl.innerHTML = SYLLABUS_FILES.map(function (f, i) {
-      return '<div class="res-item"><div>' + esc(f.title) +
-          '<div class="res-meta" id="sylMeta' + i + '">PDF</div>' +
-        "</div>" +
-        '<div class="actions-menu"><button class="btn secondary small actions-btn" type="button">Actions ▾</button>' +
-          '<div class="actions-dropdown">' +
-            '<button class="menu-item" type="button" data-syl-open="' + i + '">Open</button>' +
-            '<button class="menu-item" type="button" data-syl-save="' + i + '">Save</button>' +
-          "</div>" +
-        "</div></div>";
-    }).join("");
-    wireActionsMenus(listEl);
-    Array.prototype.forEach.call(listEl.querySelectorAll("[data-syl-open]"), function (btn) {
-      btn.addEventListener("click", function () { closeAllActionsMenus(); openSyllabusFile(Number(btn.getAttribute("data-syl-open"))); });
-    });
-    Array.prototype.forEach.call(listEl.querySelectorAll("[data-syl-save]"), function (btn) {
-      btn.addEventListener("click", function () { closeAllActionsMenus(); downloadSyllabusFile(Number(btn.getAttribute("data-syl-save"))); });
-    });
+    listEl.innerHTML = '<p class="empty">Loading…</p>';
+    getStore().then(function (s) { return s ? s.listResources() : []; }).then(function (all) {
+      var mine = all.filter(function (r) { return r.category === "Syllabus" && resourceMatchesBoard(r, board); });
+      mine.sort(function (a, b) { return (a.title || "").localeCompare(b.title || "", undefined, { numeric: true }); });
+      if (!mine.length) { listEl.innerHTML = '<p class="empty">No syllabus files yet.</p>'; return; }
+      listEl.innerHTML = mine.map(function (r, i) {
+        return '<div class="res-item"><div>' + esc(r.title) +
+            '<div class="res-meta" id="sylMeta' + i + '">Added by ' + esc(r.uploadedBy || "a founder") + "</div></div>" +
+            '<div style="display:flex;align-items:center;gap:8px">' +
+              '<div class="actions-menu"><button class="btn secondary small actions-btn" type="button">Actions ▾</button>' +
+                '<div class="actions-dropdown">' +
+                  '<button class="menu-item" type="button" data-syl-open="' + i + '">View</button>' +
+                  '<button class="menu-item" type="button" data-syl-save="' + i + '">Save</button>' +
+                "</div>" +
+              "</div>" +
+              (state.user && state.user.isFounder ? '<button class="btn danger small" data-syl-remove="' + r.id + '">Remove</button>' : "") +
+            "</div>" +
+          "</div>";
+      }).join("");
+      wireActionsMenus(listEl);
+      Array.prototype.forEach.call(listEl.querySelectorAll("[data-syl-open]"), function (btn) {
+        var idx = Number(btn.getAttribute("data-syl-open"));
+        btn.addEventListener("click", function () { closeAllActionsMenus(); openResourceFile(mine[idx], "sylMeta" + idx); });
+      });
+      Array.prototype.forEach.call(listEl.querySelectorAll("[data-syl-save]"), function (btn) {
+        var idx = Number(btn.getAttribute("data-syl-save"));
+        btn.addEventListener("click", function () { closeAllActionsMenus(); downloadResourceFile(mine[idx], "sylMeta" + idx); });
+      });
+      Array.prototype.forEach.call(listEl.querySelectorAll("[data-syl-remove]"), function (btn) {
+        btn.addEventListener("click", function () {
+          getStore().then(function (s) { return s.deleteResource(btn.getAttribute("data-syl-remove")); }).then(function () { loadSyllabusList(board); });
+        });
+      });
+    }).catch(function () { listEl.innerHTML = '<p class="empty">Couldn’t load syllabus files.</p>'; });
   }
 
   // A plain fetch() for a file's bytes, with the session token attached — static worksheet/
@@ -2025,27 +2091,6 @@
     });
   }
 
-  function fetchSyllabusBlob(i) {
-    return fetchBinary(SYLLABUS_FILES[i].href);
-  }
-
-  function openSyllabusFile(i) {
-    var f = SYLLABUS_FILES[i];
-    var meta = document.getElementById("sylMeta" + i);
-    if (meta) meta.textContent = "Opening…";
-    fetchSyllabusBlob(i).then(function (blob) {
-      var blobUrl = URL.createObjectURL(blob);
-      openModal(
-        "<h3>" + esc(f.title) + "</h3>" +
-        '<iframe src="' + blobUrl + '" title="' + esc(f.title) + '" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;margin-top:10px"></iframe>',
-        { wide: true }
-      );
-      if (meta) meta.textContent = "PDF";
-    }).catch(function () {
-      if (meta) meta.textContent = "Couldn’t open that file here — try Save instead.";
-    });
-  }
-
   // Plain browser download — no "downloads" capability here, just a throwaway blob URL
   // and a temporary <a download> click, which every real browser handles as a save.
   function triggerBrowserDownload(blob, filename) {
@@ -2057,18 +2102,6 @@
     a.click();
     document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 4000);
-  }
-
-  function downloadSyllabusFile(i) {
-    var f = SYLLABUS_FILES[i];
-    var meta = document.getElementById("sylMeta" + i);
-    if (meta) meta.textContent = "Preparing…";
-    fetchSyllabusBlob(i).then(function (blob) {
-      triggerBrowserDownload(blob, f.href.split("/").pop());
-      if (meta) meta.textContent = "Saved.";
-    }).catch(function () {
-      if (meta) meta.textContent = "Couldn’t load that file to save it — try again.";
-    });
   }
 
   // Kind -> display label, and a shared blob-preview/download pair, reused by the Resources
@@ -2168,10 +2201,7 @@
         '<div class="cat-tabs" id="resYearTabsP" style="margin-top:-6px"></div>' +
         '<div id="resListP" style="margin-top:12px"></div>'
       ) +
-      accordionCard("Syllabus",
-        '<p style="color:var(--muted);font-size:0.9rem">The full week-by-week teaching syllabus — Kent, Bexley, and the combined Kent &amp; Bexley track — each covering Year 4, Year 4 Pt 2, and Year 5 Accelerated.</p>' +
-        '<div id="sylList"></div>'
-      ) +
+      accordionCard("Syllabus", syllabusCardHtml()) +
       accordionCard("Contact us",
         '<p style="color:var(--muted);font-size:0.9rem">Pick a topic and we’ll open an email to us with your name and details already filled in.</p>' +
         '<div class="preset-grid">' +
@@ -2185,7 +2215,7 @@
     loadMyBookings();
     loadParentCalendarData().then(drawParentCalendar);
     renderParentResourceTabs("Mark schemes", null);
-    renderSyllabusList();
+    renderSyllabusSection("combined");
   }
 
   function loadParentCalendarData() {
