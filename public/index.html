@@ -632,7 +632,7 @@
       },
       setUser: function (email, data) { return apiFetch("/api/users/" + encodeURIComponent(email), { method: "PATCH", body: data }); },
       createUser: function (data) { return apiFetch("/api/users", { method: "POST", body: data }); },
-      setPin: function (email, pin) { return apiFetch("/api/users/" + encodeURIComponent(email) + "/pin", { method: "POST", body: { pin: pin } }); },
+      setPassword: function (email, password) { return apiFetch("/api/users/" + encodeURIComponent(email) + "/password", { method: "POST", body: { password: password } }); },
       listAvailability: function () {
         return apiFetch("/api/availability").then(function (res) { return (res.availability || []).map(mapAvailability); });
       },
@@ -773,11 +773,11 @@
     return "<h2>PassFrame Portal</h2>" +
       '<label for="liEmail">Email or username</label>' +
       '<input type="text" id="liEmail" autocomplete="username" placeholder="you@example.com">' +
-      '<label for="liPin">4-digit PIN</label>' +
-      '<input type="password" inputmode="numeric" maxlength="4" id="liPin" autocomplete="current-password" placeholder="0000">' +
+      '<label for="liPin">Password</label>' +
+      '<input type="password" id="liPin" autocomplete="current-password" placeholder="Enter your password">' +
       '<button class="btn" id="liGo" style="margin-top:16px;width:100%">Log in</button>' +
       '<div class="msg" id="liMsg"></div>' +
-      '<p style="margin-top:16px;font-size:0.82rem;color:var(--muted)">New family? Your tutor sets up your login — ask them for your email and PIN.</p>';
+      '<p style="margin-top:16px;font-size:0.82rem;color:var(--muted)">New family? Your tutor sets up your login — ask them for your email and password.</p>';
   }
 
   function wireAuthModal() {
@@ -787,14 +787,14 @@
 
   function doLogin() {
     var email = document.getElementById("liEmail").value.trim().toLowerCase();
-    var pin = document.getElementById("liPin").value.trim();
+    var password = document.getElementById("liPin").value.trim();
     var msg = document.getElementById("liMsg");
     msg.textContent = ""; msg.className = "msg";
     if (!email || !isValidLoginId(email)) { msg.textContent = "Enter your email or username."; msg.className = "msg error"; return; }
-    if (!/^\d{4}$/.test(pin)) { msg.textContent = "PIN must be 4 digits."; msg.className = "msg error"; return; }
-    // The server checks the PIN, tracks failed attempts, and handles lockout itself —
+    if (!password) { msg.textContent = "Enter your password."; msg.className = "msg error"; return; }
+    // The server checks the password, tracks failed attempts, and handles lockout itself —
     // the client just sends the attempt and shows back whatever it says.
-    apiFetch("/api/login", { method: "POST", body: { email: email, pin: pin } }).then(function (res) {
+    apiFetch("/api/login", { method: "POST", body: { email: email, password: password } }).then(function (res) {
       state.user = res.user;
       state.sessionToken = res.token;
       try {
@@ -871,8 +871,8 @@
           '<select id="stuCohort">' + COHORTS.map(function (c) { return '<option value="' + c.id + '">' + c.label + "</option>"; }).join("") + "</select>" +
           '<label for="stuBoard">Exam board</label>' +
           '<select id="stuBoard">' + BOARDS.map(function (b) { return '<option value="' + b.id + '">' + b.label + "</option>"; }).join("") + "</select>" +
-          '<label for="stuPin">4-digit PIN</label>' +
-          '<input type="password" inputmode="numeric" maxlength="4" id="stuPin" placeholder="0000">' +
+          '<label for="stuPin">Password (min 8 characters)</label>' +
+          '<input type="password" id="stuPin" autocomplete="new-password" placeholder="At least 8 characters">' +
           '<button class="btn" id="stuAdd" style="margin-top:16px">Add student login</button>' +
           '<div class="msg" id="stuMsg"></div>' +
           '<div id="stuList" style="margin-top:20px"></div>'
@@ -883,8 +883,8 @@
           '<input type="text" id="tutName">' +
           '<label for="tutId">Email or username (used to log in)</label>' +
           '<input type="text" id="tutId" autocomplete="off">' +
-          '<label for="tutPin">4-digit PIN</label>' +
-          '<input type="password" inputmode="numeric" maxlength="4" id="tutPin" placeholder="0000">' +
+          '<label for="tutPin">Password (min 8 characters)</label>' +
+          '<input type="password" id="tutPin" autocomplete="new-password" placeholder="At least 8 characters">' +
           '<label for="tutPhoto">Photo (optional)</label>' +
           '<input type="file" id="tutPhoto" accept="image/*">' +
           '<label class="checkbox-row" for="tutFounder"><input type="checkbox" id="tutFounder"> Founder access (gold badge, View tutors, Email anyone, upload files)</label>' +
@@ -937,14 +937,14 @@
       var email = document.getElementById("stuEmail").value.trim().toLowerCase();
       var cohort = document.getElementById("stuCohort").value;
       var board = document.getElementById("stuBoard").value;
-      var pin = document.getElementById("stuPin").value.trim();
+      var password = document.getElementById("stuPin").value.trim();
       var msg = document.getElementById("stuMsg");
       msg.textContent = ""; msg.className = "msg";
       if (!parent || !child) { msg.textContent = "Enter both names."; msg.className = "msg error"; return; }
       if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) { msg.textContent = "Enter a valid email."; msg.className = "msg error"; return; }
-      if (!/^\d{4}$/.test(pin)) { msg.textContent = "PIN must be 4 digits."; msg.className = "msg error"; return; }
+      if (password.length < 8) { msg.textContent = "Password must be at least 8 characters."; msg.className = "msg error"; return; }
       getStore().then(function (s) {
-        return s.createUser({ email: email, pin: pin, role: "parent", name: parent, childName: child, cohort: cohort, board: board }).then(function () {
+        return s.createUser({ email: email, password: password, role: "parent", name: parent, childName: child, cohort: cohort, board: board }).then(function () {
           msg.textContent = "Added."; msg.className = "msg ok";
           document.getElementById("stuParent").value = "";
           document.getElementById("stuChild").value = "";
@@ -1050,18 +1050,18 @@
     });
   }
 
-  // Lets a founder set a new PIN for any login — tutor, student, or a founder's own — without
+  // Lets a founder set a new password for any login — tutor, student, or a founder's own — without
   // needing the old one. Same "load the existing record, overwrite just one field, save it back"
   // pattern as the Teams-link save, so every other field on the account is left untouched.
   function openChangePinModal(id, displayName) {
     openModal(
-      "<h3>Change PIN for " + esc(displayName) + "</h3>" +
+      "<h3>Change password for " + esc(displayName) + "</h3>" +
       '<p style="color:var(--muted);font-size:0.9rem">Login: <strong>' + esc(id) + "</strong></p>" +
-      '<label for="cpNew">New 4-digit PIN</label>' +
-      '<input type="password" inputmode="numeric" maxlength="4" id="cpNew" autocomplete="new-password" placeholder="0000">' +
-      '<label for="cpConfirm">Confirm new PIN</label>' +
-      '<input type="password" inputmode="numeric" maxlength="4" id="cpConfirm" autocomplete="new-password" placeholder="0000">' +
-      '<button class="btn" id="cpGo" style="margin-top:16px;width:100%">Save new PIN</button>' +
+      '<label for="cpNew">New password (min 8 characters)</label>' +
+      '<input type="password" id="cpNew" autocomplete="new-password" placeholder="At least 8 characters">' +
+      '<label for="cpConfirm">Confirm new password</label>' +
+      '<input type="password" id="cpConfirm" autocomplete="new-password" placeholder="At least 8 characters">' +
+      '<button class="btn" id="cpGo" style="margin-top:16px;width:100%">Save new password</button>' +
       '<div class="msg" id="cpMsg"></div>'
     );
     document.getElementById("cpGo").addEventListener("click", function () {
@@ -1069,10 +1069,10 @@
       var p2 = document.getElementById("cpConfirm").value.trim();
       var msg = document.getElementById("cpMsg");
       msg.textContent = ""; msg.className = "msg";
-      if (!/^\d{4}$/.test(p1)) { msg.textContent = "PIN must be 4 digits."; msg.className = "msg error"; return; }
-      if (p1 !== p2) { msg.textContent = "PINs don’t match."; msg.className = "msg error"; return; }
+      if (p1.length < 8) { msg.textContent = "Password must be at least 8 characters."; msg.className = "msg error"; return; }
+      if (p1 !== p2) { msg.textContent = "Passwords don’t match."; msg.className = "msg error"; return; }
       getStore().then(function (s) {
-        return s.setPin(id, p1).then(function () {
+        return s.setPassword(id, p1).then(function () {
           closeModal();
           refreshAfterRemoval();
         });
@@ -1124,7 +1124,7 @@
           '<span class="slot-credentials">Login: <strong>' + esc(f.email) + "</strong></span></div>" +
           '<div class="actions-menu"><button class="btn secondary small actions-btn" type="button">Actions ▾</button>' +
             '<div class="actions-dropdown">' +
-              '<button class="menu-item" type="button" data-pin-email="' + esc(f.email) + '" data-pin-name="' + esc(fullName) + '">Change PIN</button>' +
+              '<button class="menu-item" type="button" data-pin-email="' + esc(f.email) + '" data-pin-name="' + esc(fullName) + '">Change password</button>' +
               '<button class="menu-item danger" type="button" data-remove-email="' + esc(f.email) + '" data-remove-name="' + esc(fullName) + '">Remove</button>' +
             "</div>" +
           "</div></div>";
@@ -1179,14 +1179,14 @@
     addBtn.addEventListener("click", function () {
       var name = document.getElementById("tutName").value.trim();
       var id = document.getElementById("tutId").value.trim().toLowerCase();
-      var pin = document.getElementById("tutPin").value.trim();
+      var password = document.getElementById("tutPin").value.trim();
       var isFounderNew = document.getElementById("tutFounder").checked;
       var fileInput = document.getElementById("tutPhoto");
       var msg = document.getElementById("tutMsg");
       msg.textContent = ""; msg.className = "msg";
       if (!name) { msg.textContent = "Enter the tutor’s name."; msg.className = "msg error"; return; }
       if (!id || !isValidLoginId(id)) { msg.textContent = "Enter a valid email or username (letters/numbers, 3+ characters)."; msg.className = "msg error"; return; }
-      if (!/^\d{4}$/.test(pin)) { msg.textContent = "PIN must be 4 digits."; msg.className = "msg error"; return; }
+      if (password.length < 8) { msg.textContent = "Password must be at least 8 characters."; msg.className = "msg error"; return; }
       addBtn.disabled = true;
       var hasFile = fileInput.files && fileInput.files[0];
       // No more "assets" capability to upload a photo to — just read it straight into a
@@ -1194,7 +1194,7 @@
       // field already accepts any data URL.
       var photoPromise = hasFile ? fileToDataUrl(fileInput.files[0]).catch(function () { return null; }) : Promise.resolve(null);
       photoPromise.then(function (photoUrl) {
-        var data = { email: id, pin: pin, role: "tutor", name: name };
+        var data = { email: id, password: password, role: "tutor", name: name };
         if (isFounderNew) data.isFounder = true;
         if (photoUrl) data.photoDataUrl = photoUrl;
         return getStore().then(function (s) { return s.createUser(data); });
@@ -1227,7 +1227,7 @@
           '<span class="slot-credentials">Login: <strong>' + esc(t.email) + "</strong></span></div></div>" +
           '<div class="actions-menu"><button class="btn secondary small actions-btn" type="button">Actions ▾</button>' +
             '<div class="actions-dropdown">' +
-              '<button class="menu-item" type="button" data-pin-tutor="' + esc(t.email) + '" data-pin-name="' + esc(t.name) + (isSelf ? " (you)" : "") + '">Change PIN</button>' +
+              '<button class="menu-item" type="button" data-pin-tutor="' + esc(t.email) + '" data-pin-name="' + esc(t.name) + (isSelf ? " (you)" : "") + '">Change password</button>' +
               '<button class="menu-item" type="button" data-photo-tutor="' + esc(t.email) + '" data-photo-name="' + esc(t.name) + (isSelf ? " (you)" : "") + '">Update photo</button>' +
               ((isSelf || t.isFounder) ? "" : '<button class="menu-item danger" type="button" data-remove-tutor="' + esc(t.email) + '" data-remove-name="' + esc(t.name) + '">Remove</button>') +
             "</div>" +

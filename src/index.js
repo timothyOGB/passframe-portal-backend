@@ -54,8 +54,10 @@ const LOCKOUT_MS = 15 * 60 * 1000;
 // ---------- auth ----------
 
 app.post("/api/login", async (c) => {
-  const { email, pin } = await c.req.json();
-  if (!email || !pin) return c.json({ error: "Email and PIN are required." }, 400);
+  const body = await c.req.json();
+  const email = body.email;
+  const password = body.password ?? body.pin;
+  if (!email || !password) return c.json({ error: "Email and password are required." }, 400);
   const normalizedEmail = String(email).trim().toLowerCase();
 
   const row = await c.env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(normalizedEmail).first();
@@ -67,7 +69,7 @@ app.post("/api/login", async (c) => {
     return c.json({ error: `Too many incorrect attempts. Try again in ${minsLeft} minute${minsLeft === 1 ? "" : "s"}.` }, 423);
   }
 
-  const candidateHash = await hashPin(String(pin).trim(), row.pin_salt);
+  const candidateHash = await hashPin(String(password).trim(), row.pin_salt);
   if (candidateHash !== row.pin_hash) {
     const attempts = (row.failed_attempts || 0) + 1;
     const justLocked = attempts >= LOCKOUT_ATTEMPTS;
@@ -77,7 +79,7 @@ app.post("/api/login", async (c) => {
     if (justLocked) {
       return c.json({ error: "Too many incorrect attempts. This account is locked for 15 minutes." }, 423);
     }
-    return c.json({ error: "Incorrect PIN." }, 401);
+    return c.json({ error: "Incorrect password." }, 401);
   }
 
   if (row.failed_attempts || row.locked_until) {
@@ -108,14 +110,14 @@ app.get("/api/users", requireAuth, async (c) => {
 app.post("/api/users", requireAuth, requireFounder, async (c) => {
   const body = await c.req.json();
   const email = String(body.email || "").trim().toLowerCase();
-  const pin = String(body.pin || "").trim();
-  if (!email || !/^\d{4,}$/.test(pin)) return c.json({ error: "A valid email and PIN are required." }, 400);
+  const password = String(body.password ?? body.pin ?? "").trim();
+  if (!email || password.length < 8) return c.json({ error: "A valid email and a password of at least 8 characters are required." }, 400);
 
   const existing = await c.env.DB.prepare("SELECT email FROM users WHERE email = ?").bind(email).first();
   if (existing) return c.json({ error: "An account already exists for that email." }, 409);
 
   const salt = randomSalt();
-  const pinHash = await hashPin(pin, salt);
+  const pinHash = await hashPin(password, salt);
 
   await c.env.DB.prepare(
     `INSERT INTO users (email, role, name, pin_hash, pin_salt, is_founder, photo_data_url, teams_link, child_name, cohort, board)
@@ -137,19 +139,20 @@ app.post("/api/users", requireAuth, requireFounder, async (c) => {
   return c.json({ ok: true });
 });
 
-app.post("/api/users/:email/pin", requireAuth, async (c) => {
+app.post("/api/users/:email/password", requireAuth, async (c) => {
   const auth = c.get("auth");
   const targetEmail = c.req.param("email").toLowerCase();
-  if (!auth.isFounder && auth.email !== targetEmail) return c.json({ error: "You can only change your own PIN." }, 403);
+  if (!auth.isFounder && auth.email !== targetEmail) return c.json({ error: "You can only change your own password." }, 403);
 
-  const { pin } = await c.req.json();
-  if (!/^\d{4,}$/.test(String(pin || ""))) return c.json({ error: "Enter a valid PIN." }, 400);
+  const body = await c.req.json();
+  const password = String(body.password ?? body.pin ?? "").trim();
+  if (password.length < 8) return c.json({ error: "Enter a password of at least 8 characters." }, 400);
 
   const existing = await c.env.DB.prepare("SELECT email FROM users WHERE email = ?").bind(targetEmail).first();
   if (!existing) return c.json({ error: "That login couldn't be found anymore." }, 404);
 
   const salt = randomSalt();
-  const pinHash = await hashPin(String(pin).trim(), salt);
+  const pinHash = await hashPin(password, salt);
   await c.env.DB.prepare(
     "UPDATE users SET pin_hash = ?, pin_salt = ?, failed_attempts = 0, locked_until = NULL WHERE email = ?"
   ).bind(pinHash, salt, targetEmail).run();
