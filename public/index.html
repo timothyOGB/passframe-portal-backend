@@ -1,0 +1,2488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PassFrame Portal</title>
+<meta name="description" content="Tutor and parent portal for PassFrame Tuition: availability, booking and lesson resources.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --ink: #1e1633;
+    --muted: #5b5170;
+    --wash: #f7f2fd;
+    --line: #e5dbf4;
+    --brand: #8b2be2;
+    --brand-text: #7a1fd0;
+    --deep: #4a1290;
+    --tint: #d3aef7;
+    --on-brand: #ffffff;
+    --glow: rgba(139, 43, 226, 0.12);
+    --ok: #1a7a4c;
+    --ok-wash: #eaf8f1;
+    --warn: #b5530a;
+    --warn-wash: #fdf2e6;
+    --blue: #1d5fc9;
+    --blue-wash: #e3edfc;
+    --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --text: "Source Serif 4", Charter, "Iowan Old Style", Georgia, serif;
+    box-sizing: border-box;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #130f1f;
+      --ink: #f3eefb;
+      --muted: #b6abcd;
+      --wash: #1b1530;
+      --line: #352a50;
+      --brand: #9b45ee;
+      --brand-text: #c393ff;
+      --deep: #7a35d6;
+      --tint: #5f3f93;
+      --glow: rgba(155, 69, 238, 0.2);
+      --ok: #4fd18e;
+      --ok-wash: #103524;
+      --warn: #f0a15c;
+      --warn-wash: #3a2610;
+      --blue: #7fb0ff;
+      --blue-wash: #17253f;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--text);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4 { font-family: var(--display); color: var(--ink); margin: 0 0 8px; line-height: 1.15; }
+  p { margin: 0 0 12px; }
+  a { color: var(--brand-text); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+  header.top {
+    border-bottom: 1px solid var(--line);
+    padding: 18px 0;
+    background: var(--wash);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+  header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .brand-mark { font-family: var(--display); font-weight: 800; font-size: 1.3rem; color: var(--brand); text-decoration: none; }
+  .brand-mark span { display: block; font-size: 0.55rem; letter-spacing: 0.14em; color: var(--brand); font-weight: 600; }
+  .top-actions { display: flex; align-items: center; gap: 14px; }
+  .who { font-size: 0.92rem; color: var(--muted); }
+  .who strong { color: var(--ink); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: var(--display); font-weight: 700; font-size: 0.92rem;
+    padding: 10px 18px; border-radius: 999px; border: none; cursor: pointer;
+    background: var(--brand); color: var(--on-brand); text-decoration: none;
+  }
+  .btn:hover { background: var(--deep); }
+  .btn.secondary { background: transparent; color: var(--brand-text); border: 1.5px solid var(--line); }
+  .btn.secondary:hover { border-color: var(--brand); }
+  .btn.small { padding: 6px 14px; font-size: 0.82rem; }
+  .btn.danger { background: transparent; color: #c23b3b; border: 1.5px solid #e8c5c5; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  main { padding: 40px 0 80px; min-height: 60vh; }
+  .banner {
+    border-radius: 14px; padding: 14px 18px; margin-bottom: 24px;
+    font-size: 0.92rem; display: flex; gap: 10px; align-items: flex-start;
+  }
+  .banner.info { background: var(--wash); color: var(--muted); border: 1px solid var(--line); }
+  .banner.warn { background: var(--warn-wash); color: var(--warn); border: 1px solid var(--warn); }
+  .banner.ok { background: var(--ok-wash); color: var(--ok); border: 1px solid var(--ok); }
+  .card {
+    background: var(--wash); border: 1px solid var(--line); border-radius: 18px;
+    padding: 24px clamp(18px, 4vw, 32px); margin-bottom: 20px;
+  }
+  .card h3 { font-size: 1.05rem; }
+  label { display: block; font-family: var(--display); font-weight: 600; font-size: 0.85rem; margin: 14px 0 6px; }
+  label:first-child { margin-top: 0; }
+  input, select, textarea {
+    width: 100%; padding: 11px 14px; border-radius: 10px; border: 1.5px solid var(--line);
+    background: var(--bg); color: var(--ink); font: inherit; font-size: 0.96rem;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 560px) { .field-row { grid-template-columns: 1fr; } }
+  .tab-row { display: flex; gap: 8px; margin-bottom: 18px; }
+  .tab-btn {
+    flex: 1; padding: 9px 10px; border-radius: 10px; border: 1.5px solid var(--line);
+    background: var(--bg); color: var(--muted); font-family: var(--display); font-weight: 700;
+    font-size: 0.85rem; cursor: pointer;
+  }
+  .tab-btn[aria-selected="true"] { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
+  .tab-btn.small { flex: none; padding: 6px 12px; font-size: 0.76rem; }
+  .preset-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+  .preset-btn {
+    display: inline-block; padding: 9px 14px; border-radius: 999px; border: 1.5px solid var(--line);
+    background: var(--bg); color: var(--brand-text); font-family: var(--display); font-weight: 700;
+    font-size: 0.82rem; cursor: pointer; text-decoration: none;
+  }
+  .preset-btn:hover { border-color: var(--brand); background: var(--wash); }
+  .msg { font-size: 0.88rem; margin-top: 10px; }
+  .msg.error { color: #c23b3b; }
+  .msg.ok { color: var(--ok); }
+  .avatar {
+    width: 64px; height: 64px; border-radius: 50%; overflow: hidden; flex: none;
+    background: var(--brand); color: var(--on-brand); display: flex; align-items: center; justify-content: center;
+    font-family: var(--display); font-weight: 700; font-size: 1.3rem;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .hello-row { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+  .hello-row h2 { font-size: 1.5rem; margin-bottom: 2px; }
+  .role-tag { display: inline-block; background: var(--tint); color: var(--deep); font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; font-family: var(--display); }
+  .role-tag.small { font-size: 0.66rem; padding: 2px 8px; }
+  .student-badge { display: inline-block; background: var(--blue-wash); color: var(--blue); font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; font-family: var(--display); }
+  .student-badge.small { font-size: 0.66rem; padding: 2px 8px; }
+  .hello-row .role-tag, .hello-row .student-badge { margin-left: 2px; }
+  .founder-badge { display: inline-block; background: linear-gradient(135deg, #f6d675, #d3a627); color: #4a3300; font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; font-family: var(--display); letter-spacing: 0.02em; }
+  .hello-row .founder-badge { margin-right: 6px; }
+  .empty { color: var(--muted); font-size: 0.9rem; font-style: italic; padding: 10px 0; }
+  .cat-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .res-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 16px; margin-bottom: 8px;
+  }
+  .res-item a { font-weight: 600; }
+  .res-meta { font-size: 0.78rem; color: var(--muted); }
+  .hidden { display: none !important; }
+
+  /* Hero (logged out) */
+  .hero-panel { text-align: center; max-width: 560px; margin: 40px auto 0; }
+  .hero-panel h1 { font-size: clamp(1.8rem, 4vw, 2.3rem); }
+  .hero-panel p { color: var(--muted); }
+  .hero-panel .btn { margin-top: 12px; padding: 13px 28px; font-size: 1rem; }
+  .hero-points { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 36px; text-align: left; }
+  @media (max-width: 640px) { .hero-points { grid-template-columns: 1fr; } }
+  .hero-point { background: var(--wash); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+  .hero-point strong { display: block; font-family: var(--display); font-size: 0.95rem; margin-bottom: 4px; }
+  .hero-point span { font-size: 0.85rem; color: var(--muted); }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(20, 12, 36, 0.5); z-index: 90;
+    display: none; align-items: flex-start; justify-content: center; padding: 6vh 16px; overflow-y: auto;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal-card {
+    background: var(--bg); border-radius: 20px; padding: clamp(22px, 4vw, 32px);
+    max-width: 460px; width: 100%; position: relative; box-shadow: 0 24px 60px rgba(20, 6, 50, 0.3);
+  }
+  .modal-card.wide { max-width: 640px; }
+  .modal-close {
+    position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border-radius: 50%;
+    border: none; background: var(--wash); color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1;
+  }
+  .modal-close:hover { background: var(--tint); color: var(--deep); }
+
+  /* Month calendar */
+  #tutorCal, #parentCal { max-width: 320px; margin: 0 auto; }
+  .cal-month-head { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; margin-bottom: 10px; }
+  .cal-month-head h3 { margin: 0; font-size: 0.95rem; }
+  .cal-nav {
+    width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--bg);
+    color: var(--brand-text); font-size: 1rem; cursor: pointer; line-height: 1; flex: none;
+  }
+  .cal-nav:hover:not(:disabled) { border-color: var(--brand); background: var(--wash); }
+  .cal-nav:disabled { opacity: 0.35; cursor: not-allowed; }
+  .cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 4px; }
+  .cal-weekdays span { text-align: center; font-family: var(--display); font-weight: 700; font-size: 0.6rem; color: var(--muted); }
+  .cal-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .cal-cell {
+    aspect-ratio: 1 / 1; border-radius: 7px; border: 1.5px solid var(--line); background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    cursor: pointer; font: inherit; color: var(--ink); position: relative; padding: 1px;
+  }
+  .cal-cell.empty { visibility: hidden; cursor: default; border: none; }
+  .cal-cell:hover:not(:disabled) { border-color: var(--brand); }
+  .cal-cell:disabled { opacity: 0.32; cursor: not-allowed; }
+  .cal-cell.today { border-color: var(--brand); border-width: 2px; }
+  .cal-cell.has-slots { background: var(--wash); }
+  .cal-cell.has-available { background: var(--tint); border-color: var(--brand); }
+  .cal-cell.has-selected { background: var(--brand); border-color: var(--brand); }
+  .cal-cell.has-selected .cal-daynum { color: var(--on-brand); }
+  .cal-daynum { font-family: var(--display); font-weight: 700; font-size: 0.68rem; }
+  .cal-badge {
+    font-size: 0.5rem; font-weight: 700; font-family: var(--display); color: var(--brand-text);
+    background: var(--bg); border-radius: 999px; padding: 0 4px; line-height: 1.3; min-width: 12px; text-align: center;
+  }
+  .cal-cell.has-selected .cal-badge { color: var(--brand); }
+  @media (max-width: 380px) { #tutorCal, #parentCal { max-width: 100%; } .cal-daynum { font-size: 0.62rem; } .cal-badge { font-size: 0.46rem; } }
+
+  .day-slot-list { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+  .day-slot-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--wash); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 0.85rem;
+  }
+  .day-slot-main strong { font-family: var(--display); display: block; }
+  .day-slot-main span { color: var(--muted); font-size: 0.78rem; }
+  .day-slot-item.completed { border-color: var(--ok); background: var(--ok-wash); }
+  .day-slot-actions { display: flex; align-items: center; gap: 10px; flex: none; }
+  .slot-complete { display: flex; align-items: center; gap: 5px; font-size: 0.78rem; color: var(--muted); cursor: pointer; white-space: nowrap; }
+  .slot-complete input { width: 15px; height: 15px; margin: 0; }
+  .checkbox-row { display: flex; align-items: center; gap: 9px; margin: 16px 0 0; cursor: pointer; }
+  .checkbox-row input { width: 16px; height: 16px; margin: 0; flex: none; }
+  .tutor-row-avatar { width: 34px; height: 34px; border-radius: 50%; overflow: hidden; flex: none; background: var(--brand-wash); color: var(--brand); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+  .tutor-row-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .tutor-row { display: flex; align-items: center; gap: 12px; }
+  .founder-badge.small { font-size: 0.68rem; padding: 2px 8px; }
+  .tutor-picker { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .tutor-pick-btn {
+    display: flex; align-items: center; gap: 8px; padding: 8px 14px 8px 8px; border-radius: 999px;
+    border: 1.5px solid var(--line); background: var(--bg); cursor: pointer; font: inherit; font-size: 0.85rem; color: var(--ink);
+  }
+  .tutor-pick-btn:hover { border-color: var(--brand); }
+  .tutor-pick-btn[aria-selected="true"] { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
+  .tutor-pick-avatar {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--tint); color: var(--deep);
+    display: flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 700; font-size: 0.78rem; overflow: hidden; flex: none;
+  }
+  .tutor-pick-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .stat-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 14px 0; }
+  .stat-tile {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; min-width: 130px; flex: 1;
+  }
+  .stat-tile strong { display: block; font-family: var(--display); font-size: 1.3rem; }
+  .stat-tile span { color: var(--muted); font-size: 0.78rem; }
+  .cal-with-sidebar { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+  .cal-with-sidebar .cal-main { flex: 2 1 260px; min-width: 260px; }
+  .cal-with-sidebar .cal-sidebar { flex: 1 1 150px; min-width: 150px; display: flex; flex-direction: column; gap: 10px; }
+  .cal-with-sidebar .cal-sidebar .stat-tile { min-width: 0; }
+  .back-link { display: inline-block; margin-bottom: 12px; color: var(--brand-text); font-weight: 600; font-size: 0.85rem; cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; }
+  .back-link:hover { text-decoration: underline; }
+  .credential-box { background: var(--brand-wash); border: 1px solid var(--brand); border-radius: 10px; padding: 9px 14px; font-size: 0.85rem; margin-bottom: 12px; }
+  .credential-box strong { font-family: var(--mono, inherit); letter-spacing: 0.02em; }
+  .slot-credentials { color: var(--muted); font-size: 0.8rem; }
+
+  .card.accordion { padding: 0; }
+  .card.accordion > summary {
+    list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 20px clamp(18px, 4vw, 32px); font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--ink);
+    -webkit-tap-highlight-color: transparent; border-radius: 18px;
+  }
+  .card.accordion > summary::-webkit-details-marker { display: none; }
+  .card.accordion > summary::marker { content: ""; }
+  .card.accordion > summary:hover { background: var(--bg); }
+  .card.accordion[open] > summary { border-bottom: 1px solid var(--line); border-radius: 18px 18px 0 0; }
+  .card.accordion .chevron { flex: none; color: var(--muted); transition: transform 0.2s ease; display: inline-flex; }
+  .card.accordion[open] .chevron { transform: rotate(180deg); }
+  .card.accordion > .accordion-body { padding: 20px clamp(18px, 4vw, 32px) 24px; }
+  .day-slot-select {
+    width: 100%; text-align: left; border-radius: 12px; padding: 10px 12px; font-size: 0.85rem;
+    background: var(--bg); border: 1.5px solid var(--line); cursor: pointer; font: inherit; color: var(--ink);
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .day-slot-select strong { font-family: var(--display); }
+  .day-slot-select span { color: var(--muted); font-size: 0.78rem; }
+  .day-slot-select:hover:not(:disabled) { border-color: var(--brand); }
+  .day-slot-select.selected { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
+  .day-slot-select.selected span { color: var(--on-brand); opacity: 0.85; }
+  .day-slot-select:disabled { opacity: 0.5; cursor: not-allowed; }
+  .day-slot-select.booked { background: var(--ok-wash); border-color: var(--ok); color: var(--ok); cursor: default; }
+
+  .slot-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; flex-wrap: wrap; margin-bottom: 10px;
+  }
+  .slot-main { display: flex; flex-direction: column; gap: 2px; }
+  .slot-day { font-family: var(--display); font-weight: 700; }
+  .slot-time { color: var(--muted); font-size: 0.88rem; }
+
+  .actions-menu { position: relative; flex: none; }
+  .actions-dropdown {
+    display: none; position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; min-width: 150px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+    box-shadow: 0 10px 28px rgba(20, 6, 50, 0.18);
+  }
+  .actions-dropdown.show { display: block; }
+  .menu-item {
+    display: block; width: 100%; text-align: left; padding: 10px 14px; border: none; background: none;
+    font: inherit; font-size: 0.88rem; font-weight: 600; color: var(--ink); cursor: pointer;
+  }
+  .menu-item:hover { background: var(--wash); }
+  .menu-item.danger { color: #c23b3b; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand-mark" href="#">PassFrame<span>PORTAL</span></a>
+    <div class="top-actions" id="topActions"></div>
+  </div>
+</header>
+
+<main class="wrap" id="app"></main>
+
+<footer style="border-top:1px solid var(--line); padding:24px 0; text-align:center; color:var(--muted); font-size:0.85rem;">
+  <p>PassFrame Tuition &middot; Staff &amp; family portal</p>
+</footer>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal-card" id="modalCard" role="dialog" aria-modal="true">
+    <button class="modal-close" id="modalCloseBtn" type="button" aria-label="Close">&times;</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var state = { user: null, sessionToken: null };
+
+  var COHORTS = [
+    { id: "y4-11plus", label: "Year 4 · 11+" },
+    { id: "y4pt2-11plus", label: "Year 4 Pt 2 · 11+" },
+    { id: "y5-11plus", label: "Year 5 Accelerated · 11+" }
+  ];
+  // A student's board decides which board-restricted topics they see in the Worksheet Library
+  // (most topics are shared by Kent and Bexley — only a handful, like NVR paper-folding, are
+  // board-specific). "combined" (Kent & Bexley) sees everything, restricted or not.
+  var BOARDS = [
+    { id: "kent", label: "Kent" },
+    { id: "bexley", label: "Bexley" },
+    { id: "combined", label: "Kent & Bexley" }
+  ];
+  var RES_CATEGORIES = ["Mark schemes", "Lessons", "Homework", "Resource lists"];
+  var RES_SUBJECTS = ["Maths", "English", "Verbal Reasoning", "Non-Verbal Reasoning"];
+  var RES_CATEGORIES_WITH_SUBJECTS = ["Mark schemes", "Lessons", "Homework"];
+  // Year group only applies once a subject is picked (Mark schemes/Lessons/Homework) — a Year 4
+  // student and a Year 5 Accelerated student work through the same topic bank at different
+  // depth/pace, so each topic's content is written separately per year group. Ids match COHORTS.
+  var RES_YEARGROUPS = [
+    { id: "y4-11plus", label: "Year 4" },
+    { id: "y4pt2-11plus", label: "Year 4 Pt 2" },
+    { id: "y5-11plus", label: "Year 5" }
+  ];
+  // The Syllabus section (tutor portal only) links straight to PDFs published alongside this
+  // page, rather than going through the assets/db resource store — those files are baked into
+  // the artifact itself, so they load for anyone who can open the portal, with no extra
+  // capability grant or database round-trip involved.
+  var SYLLABUS_FILES = [
+    { title: "Kent Syllabus 2026/27 (Year 4 · Year 4 Pt 2 · Year 5 Accelerated)", href: "syllabus/kent.pdf" },
+    { title: "Bexley Syllabus 2026/27 (Year 4 · Year 4 Pt 2 · Year 5 Accelerated)", href: "syllabus/bexley.pdf" },
+    { title: "Kent & Bexley Combined Syllabus 2026/27 (Year 4 · Year 4 Pt 2 · Year 5 Accelerated)", href: "syllabus/kent-bexley.pdf" }
+  ];
+  // Worksheet Library: per-topic Lesson Worksheet / Homework Worksheet / Mark Scheme, published
+  // as static PDFs alongside this page (same pattern as SYLLABUS_FILES above). Maths and English
+  // are fully built; Verbal Reasoning and Non-Verbal Reasoning are still being produced and will
+  // populate here the same way once ready — the tab shows an in-progress note until then.
+  var WORKSHEET_SUBJECTS = ["Maths", "English", "Verbal Reasoning", "Non-Verbal Reasoning"];
+  var WORKSHEET_LIBRARY = {
+    "Maths": [
+      { title: "Place Value", files: { lesson: "worksheets/Maths/M01_Place_Value_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M01_Place_Value_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M01_Place_Value_Mark_Scheme.pdf" } },
+      { title: "Addition & Subtraction", files: { lesson: "worksheets/Maths/M02_Addition_Subtraction_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M02_Addition_Subtraction_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M02_Addition_Subtraction_Mark_Scheme.pdf" } },
+      { title: "Multiplication & Division", files: { lesson: "worksheets/Maths/M03_Multiplication_Division_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M03_Multiplication_Division_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M03_Multiplication_Division_Mark_Scheme.pdf" } },
+      { title: "Times Tables", files: { lesson: "worksheets/Maths/M04_Times_Tables_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M04_Times_Tables_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M04_Times_Tables_Mark_Scheme.pdf" } },
+      { title: "Factors, Multiples & Primes", files: { lesson: "worksheets/Maths/M05_Factors_Multiples_Primes_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M05_Factors_Multiples_Primes_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M05_Factors_Multiples_Primes_Mark_Scheme.pdf" } },
+      { title: "Decimals", files: { lesson: "worksheets/Maths/M08_Decimals_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M08_Decimals_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M08_Decimals_Mark_Scheme.pdf" } },
+      { title: "Fractions, Decimals & Percentages", files: { lesson: "worksheets/Maths/M09_FDP_Conversions_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M09_FDP_Conversions_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M09_FDP_Conversions_Mark_Scheme.pdf" } },
+      { title: "Percentages", files: { lesson: "worksheets/Maths/M10_Percentages_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M10_Percentages_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M10_Percentages_Mark_Scheme.pdf" } },
+      { title: "Ratio & Proportion", files: { lesson: "worksheets/Maths/M11_Ratio_Proportion_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M11_Ratio_Proportion_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M11_Ratio_Proportion_Mark_Scheme.pdf" } },
+      { title: "Number Sequences & Patterns", files: { lesson: "worksheets/Maths/M12_Sequences_Patterns_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M12_Sequences_Patterns_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M12_Sequences_Patterns_Mark_Scheme.pdf" } },
+      { title: "Simple Algebra", files: { lesson: "worksheets/Maths/M13_Simple_Algebra_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M13_Simple_Algebra_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M13_Simple_Algebra_Mark_Scheme.pdf" } },
+      { title: "Measurement: Length, Mass & Capacity", files: { lesson: "worksheets/Maths/M14_Measurement_Length_Mass_Capacity_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M14_Measurement_Length_Mass_Capacity_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M14_Measurement_Length_Mass_Capacity_Mark_Scheme.pdf" } },
+      { title: "Time, Timetables & Durations", files: { lesson: "worksheets/Maths/M15_Time_Timetables_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M15_Time_Timetables_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M15_Time_Timetables_Mark_Scheme.pdf" } },
+      { title: "Money Problems & Multi-Step Calculations", files: { lesson: "worksheets/Maths/M16_Money_Problems_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M16_Money_Problems_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M16_Money_Problems_Mark_Scheme.pdf" } },
+      { title: "Perimeter & Area", files: { lesson: "worksheets/Maths/M17_Perimeter_Area_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M17_Perimeter_Area_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M17_Perimeter_Area_Mark_Scheme.pdf" } },
+      { title: "Volume & 3D Shapes", files: { lesson: "worksheets/Maths/M18_Volume_3D_Shapes_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M18_Volume_3D_Shapes_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M18_Volume_3D_Shapes_Mark_Scheme.pdf" } },
+      { title: "Angles & 2D Shapes", files: { lesson: "worksheets/Maths/M19_Angles_2D_Shapes_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M19_Angles_2D_Shapes_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M19_Angles_2D_Shapes_Mark_Scheme.pdf" } },
+      { title: "Coordinates & Transformations", files: { lesson: "worksheets/Maths/M20_Coordinates_Transformations_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M20_Coordinates_Transformations_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M20_Coordinates_Transformations_Mark_Scheme.pdf" } },
+      { title: "Statistics & Averages", files: { lesson: "worksheets/Maths/M21_Statistics_Averages_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M21_Statistics_Averages_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M21_Statistics_Averages_Mark_Scheme.pdf" } },
+      { title: "Multi-Step Word Problems", files: { lesson: "worksheets/Maths/M22_Multistep_Word_Problems_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M22_Multistep_Word_Problems_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M22_Multistep_Word_Problems_Mark_Scheme.pdf" } },
+      { title: "Speed, Distance & Time", files: { lesson: "worksheets/Maths/M23_Speed_Distance_Time_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M23_Speed_Distance_Time_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M23_Speed_Distance_Time_Mark_Scheme.pdf" } },
+      { title: "Roman Numerals & Negative Numbers", files: { lesson: "worksheets/Maths/M24_Roman_Numerals_Negative_Numbers_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M24_Roman_Numerals_Negative_Numbers_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M24_Roman_Numerals_Negative_Numbers_Mark_Scheme.pdf" } },
+      { title: "Mixed Mental Maths", files: { lesson: "worksheets/Maths/M25_Mixed_Mental_Maths_Lesson_Worksheet.pdf", homework: "worksheets/Maths/M25_Mixed_Mental_Maths_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/M25_Mixed_Mental_Maths_Mark_Scheme.pdf" } },
+      { title: "Fractions", files: { lesson: "worksheets/Maths/Fractions_Year5_Lesson_Worksheet.pdf", homework: "worksheets/Maths/Fractions_Year5_Homework_Worksheet.pdf", markscheme: "worksheets/Maths/Fractions_Year5_Mark_Scheme.pdf" } }
+    ],
+    "English": [
+      { title: "Word Classes I", files: { lesson: "worksheets/English/E1_Word_Classes_I_Lesson_Worksheet.pdf", homework: "worksheets/English/E1_Word_Classes_I_Homework_Worksheet.pdf", markscheme: "worksheets/English/E1_Word_Classes_I_Mark_Scheme.pdf" } },
+      { title: "Word Classes II", files: { lesson: "worksheets/English/E2_Word_Classes_II_Lesson_Worksheet.pdf", homework: "worksheets/English/E2_Word_Classes_II_Homework_Worksheet.pdf", markscheme: "worksheets/English/E2_Word_Classes_II_Mark_Scheme.pdf" } },
+      { title: "Sentences & Clauses", files: { lesson: "worksheets/English/E3_Sentences_Clauses_Lesson_Worksheet.pdf", homework: "worksheets/English/E3_Sentences_Clauses_Homework_Worksheet.pdf", markscheme: "worksheets/English/E3_Sentences_Clauses_Mark_Scheme.pdf" } },
+      { title: "Commas & Apostrophes", files: { lesson: "worksheets/English/E4_Commas_Apostrophes_Lesson_Worksheet.pdf", homework: "worksheets/English/E4_Commas_Apostrophes_Homework_Worksheet.pdf", markscheme: "worksheets/English/E4_Commas_Apostrophes_Mark_Scheme.pdf" } },
+      { title: "Advanced Punctuation", files: { lesson: "worksheets/English/E5_Advanced_Punctuation_Lesson_Worksheet.pdf", homework: "worksheets/English/E5_Advanced_Punctuation_Homework_Worksheet.pdf", markscheme: "worksheets/English/E5_Advanced_Punctuation_Mark_Scheme.pdf" } },
+      { title: "Spelling Patterns", files: { lesson: "worksheets/English/E6_Spelling_Patterns_Lesson_Worksheet.pdf", homework: "worksheets/English/E6_Spelling_Patterns_Homework_Worksheet.pdf", markscheme: "worksheets/English/E6_Spelling_Patterns_Mark_Scheme.pdf" } },
+      { title: "Synonyms & Antonyms", files: { lesson: "worksheets/English/E7_Synonyms_Antonyms_Lesson_Worksheet.pdf", homework: "worksheets/English/E7_Synonyms_Antonyms_Homework_Worksheet.pdf", markscheme: "worksheets/English/E7_Synonyms_Antonyms_Mark_Scheme.pdf" } },
+      { title: "Figurative Language", files: { lesson: "worksheets/English/E8_Figurative_Language_Lesson_Worksheet.pdf", homework: "worksheets/English/E8_Figurative_Language_Homework_Worksheet.pdf", markscheme: "worksheets/English/E8_Figurative_Language_Mark_Scheme.pdf" } },
+      { title: "Cloze & Gap-Fill", files: { lesson: "worksheets/English/E9_Cloze_Gap-Fill_Lesson_Worksheet.pdf", homework: "worksheets/English/E9_Cloze_Gap-Fill_Homework_Worksheet.pdf", markscheme: "worksheets/English/E9_Cloze_Gap-Fill_Mark_Scheme.pdf" } },
+      { title: "Proofreading", files: { lesson: "worksheets/English/E10_Proofreading_Lesson_Worksheet.pdf", homework: "worksheets/English/E10_Proofreading_Homework_Worksheet.pdf", markscheme: "worksheets/English/E10_Proofreading_Mark_Scheme.pdf" } },
+      { title: "Writing Technique", files: { lesson: "worksheets/English/E11_Writing_Technique_Lesson_Worksheet.pdf", homework: "worksheets/English/E11_Writing_Technique_Homework_Worksheet.pdf", markscheme: "worksheets/English/E11_Writing_Technique_Mark_Scheme.pdf" } },
+      { title: "Mixed English Practice", files: { lesson: "worksheets/English/E12_Mixed_English_Practice_Lesson_Worksheet.pdf", homework: "worksheets/English/E12_Mixed_English_Practice_Homework_Worksheet.pdf", markscheme: "worksheets/English/E12_Mixed_English_Practice_Mark_Scheme.pdf" } }
+    ]
+  };
+  var MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  var WEEKDAY_ABBR = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  function cohortLabel(id) {
+    var c = COHORTS.filter(function (x) { return x.id === id; })[0];
+    return c ? c.label : id;
+  }
+  function boardLabel(id) {
+    var b = BOARDS.filter(function (x) { return x.id === id; })[0];
+    return b ? b.label : (id || "Kent & Bexley");
+  }
+  // A topic with no "boards" field is common to every board. One that has it (e.g. an
+  // NVR-only Kent strand) is only shown to students on that board — "combined" (Kent & Bexley)
+  // always sees everything, restricted or not.
+  function topicVisibleForBoard(topic, board) {
+    if (!topic.boards) return true;
+    if (board === "combined") return true;
+    return topic.boards.indexOf(board) !== -1;
+  }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  var CHEVRON_SVG = '<svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+
+  // Renders a card as a native <details> disclosure — a dropdown box with an arrow to open.
+  // Everything below the calendar on each dashboard uses this so the page stays uncluttered.
+  function accordionCard(title, bodyHtml, opts) {
+    opts = opts || {};
+    return '<details class="card accordion"' + (opts.open ? " open" : "") + '>' +
+      "<summary>" + esc(title) + CHEVRON_SVG + "</summary>" +
+      '<div class="accordion-body">' + bodyHtml + "</div>" +
+    "</details>";
+  }
+
+  // ---------- email helpers ----------
+  var PASSFRAME_INBOX = "passframefd@outlook.com";
+  function mailtoHref(to, subject, body, cc) {
+    var params = "subject=" + encodeURIComponent(subject || "") + "&body=" + encodeURIComponent(body || "");
+    if (cc) params += "&cc=" + encodeURIComponent(cc);
+    return "mailto:" + (to || "") + "?" + params;
+  }
+  var CONTACT_PRESETS = [
+    { id: "reschedule", label: "Reschedule a lesson", subject: "Reschedule request", intro: "I’d like to reschedule an upcoming lesson." },
+    { id: "homework", label: "Ask about homework", subject: "Homework question", intro: "I have a question about homework." },
+    { id: "billing", label: "Ask about billing", subject: "Billing question", intro: "I have a question about billing." },
+    { id: "other", label: "Something else", subject: "General question", intro: "" }
+  ];
+  function contactPresetBody(preset, u) {
+    return "Hi PassFrame,\n\n" + (preset.intro ? preset.intro + "\n\n" : "") +
+      "Parent: " + (u.name || "") + "\nChild: " + (u.childName || "") + " (" + cohortLabel(u.cohort) + ")\n\n" +
+      (preset.id === "other" ? "Message:\n" : "Details:\n");
+  }
+
+  // ---------- calendar date helpers ----------
+  function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+  function isoDate(y, mIdx, d) { return y + "-" + pad2(mIdx + 1) + "-" + pad2(d); }
+  function daysInMonth(y, mIdx) { return new Date(y, mIdx + 1, 0).getDate(); }
+  function mondayIndex(y, mIdx, d) { var jsDay = new Date(y, mIdx, d).getDay(); return (jsDay + 6) % 7; }
+  function todayIso() { var t = new Date(); return isoDate(t.getFullYear(), t.getMonth(), t.getDate()); }
+  var WEEKDAY_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  function formatDateLabel(iso) {
+    var d = new Date(iso + "T00:00:00");
+    return WEEKDAY_FULL[d.getDay()] + " " + d.getDate() + " " + MONTH_NAMES[d.getMonth()] + " " + d.getFullYear();
+  }
+  function weekdayName(iso) { return WEEKDAY_FULL[new Date(iso + "T00:00:00").getDay()]; }
+  function addDaysIso(iso, days) {
+    var d = new Date(iso + "T00:00:00");
+    d.setDate(d.getDate() + days);
+    return isoDate(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+  function weeklyDates(firstIso, count) {
+    var out = [];
+    for (var i = 0; i < count; i++) out.push(addDaysIso(firstIso, i * 7));
+    return out;
+  }
+
+  /**
+   * Renders a month calendar into containerId.
+   * cellInfoFn(iso) -> { badge, extraClass, disabled } | null
+   * onDateClick(iso)
+   * onNav(newYear, newMonth) -- called when prev/next clicked; caller re-renders
+   */
+  function renderMonthGrid(containerId, year, month, cellInfoFn, onDateClick, onNav, minYear, minMonth) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    var lead = mondayIndex(year, month, 1);
+    var total = daysInMonth(year, month);
+    var cells = [];
+    for (var i = 0; i < lead; i++) cells.push(null);
+    for (var d = 1; d <= total; d++) cells.push(d);
+    while (cells.length % 7 !== 0) cells.push(null);
+    var t = todayIso();
+    var atMin = (year < minYear) || (year === minYear && month <= minMonth);
+
+    var html = '<div class="cal-month-head">' +
+      '<button class="cal-nav" id="' + containerId + 'Prev" type="button" aria-label="Previous month"' + (atMin ? " disabled" : "") + '>&lsaquo;</button>' +
+      "<h3>" + MONTH_NAMES[month] + " " + year + "</h3>" +
+      '<button class="cal-nav" id="' + containerId + 'Next" type="button" aria-label="Next month">&rsaquo;</button>' +
+    "</div>" +
+    '<div class="cal-weekdays">' + WEEKDAY_ABBR.map(function (w) { return "<span>" + w + "</span>"; }).join("") + "</div>" +
+    '<div class="cal-month-grid">' +
+      cells.map(function (d) {
+        if (d === null) return '<div class="cal-cell empty"></div>';
+        var iso = isoDate(year, month, d);
+        var info = cellInfoFn(iso) || {};
+        var classes = "cal-cell" + (iso === t ? " today" : "") + (info.extraClass ? " " + info.extraClass : "");
+        return '<button type="button" class="' + classes + '" data-date="' + iso + '"' + (info.disabled ? " disabled" : "") + ">" +
+          '<span class="cal-daynum">' + d + "</span>" +
+          (info.badge ? '<span class="cal-badge">' + esc(info.badge) + "</span>" : "") +
+        "</button>";
+      }).join("") +
+    "</div>";
+
+    container.innerHTML = html;
+
+    document.getElementById(containerId + "Prev").addEventListener("click", function () {
+      var m = month - 1, y = year;
+      if (m < 0) { m = 11; y--; }
+      onNav(y, m);
+    });
+    document.getElementById(containerId + "Next").addEventListener("click", function () {
+      var m = month + 1, y = year;
+      if (m > 11) { m = 0; y++; }
+      onNav(y, m);
+    });
+    Array.prototype.forEach.call(container.querySelectorAll(".cal-cell[data-date]"), function (btn) {
+      btn.addEventListener("click", function () { onDateClick(btn.getAttribute("data-date")); });
+    });
+  }
+
+  // ---------- store abstraction (real HTTP API, same origin) ----------
+  var store = window.__PORTAL_TEST_STORE__ || null;
+
+  function getStore() {
+    if (store) return Promise.resolve(store);
+    store = makeApiStore();
+    return Promise.resolve(store);
+  }
+
+  // Attaches the session token, JSON-encodes plain-object bodies, and logs the
+  // user out on a 401 (expired/invalid token) so a stale session doesn't spin
+  // forever on every call. Resolves the parsed JSON body; throws on !ok (with
+  // the server's { error } message when present) so callers can .catch().
+  function apiFetch(path, options) {
+    options = options || {};
+    var headers = Object.assign({}, options.headers || {});
+    if (state.sessionToken) headers["Authorization"] = "Bearer " + state.sessionToken;
+    var body = options.body;
+    if (body && !(body instanceof FormData)) {
+      headers["Content-Type"] = "application/json";
+      body = JSON.stringify(body);
+    }
+    return fetch(path, Object.assign({}, options, { headers: headers, body: body })).then(function (res) {
+      if (res.status === 401) {
+        state.user = null; state.sessionToken = null;
+        try { sessionStorage.removeItem("passframe_portal_user"); sessionStorage.removeItem("passframe_portal_token"); } catch (e) {}
+        renderAll();
+      }
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        if (!res.ok) throw new Error(data.error || ("Request failed (" + res.status + ")"));
+        return data;
+      });
+    });
+  }
+
+  // snake_case (D1 columns) -> camelCase (frontend data model) for the tables
+  // that aren't already mapped server-side (users is mapped by userPublic()).
+  function mapAvailability(r) { return { id: r.id, tutorEmail: r.tutor_email, date: r.date, start: r.start, end: r.end, studentEmail: r.student_email }; }
+  function mapRequest(r) {
+    return {
+      id: r.id, direction: r.direction, tutorEmail: r.tutor_email, parentEmail: r.parent_email,
+      childName: r.child_name, cohort: r.cohort, kind: r.kind, firstDate: r.first_date, start: r.start, end: r.end,
+      status: r.status, createdAt: r.created_at, renewalOf: r.renewal_of, respondedAt: r.responded_at
+    };
+  }
+  function mapBooking(r) {
+    return {
+      id: r.id, requestId: r.request_id, tutorEmail: r.tutor_email, parentEmail: r.parent_email,
+      childName: r.child_name, cohort: r.cohort, date: r.date, start: r.start, end: r.end,
+      completed: !!r.completed, createdAt: r.created_at
+    };
+  }
+  function mapResource(r) {
+    return {
+      id: r.id, category: r.category, subject: r.subject, board: r.board, yearGroup: r.year_group,
+      title: r.title, url: r.file_path, uploadedBy: r.uploaded_by, uploadedAt: r.uploaded_at
+    };
+  }
+
+  // Reads a File/Blob into a base64 data: URL, for inline storage (tutor photos) where
+  // there's no separate upload step to call first.
+  function fileToDataUrl(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.onerror = function () { reject(reader.error || new Error("Couldn’t read that file.")); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function makeApiStore() {
+    return {
+      getUser: function (email) {
+        return apiFetch("/api/users").then(function (res) {
+          var match = (res.users || []).filter(function (u) { return u.email === email; })[0];
+          return match || null;
+        });
+      },
+      setUser: function (email, data) { return apiFetch("/api/users/" + encodeURIComponent(email), { method: "PATCH", body: data }); },
+      createUser: function (data) { return apiFetch("/api/users", { method: "POST", body: data }); },
+      setPin: function (email, pin) { return apiFetch("/api/users/" + encodeURIComponent(email) + "/pin", { method: "POST", body: { pin: pin } }); },
+      listAvailability: function () {
+        return apiFetch("/api/availability").then(function (res) { return (res.availability || []).map(mapAvailability); });
+      },
+      addAvailability: function (data) {
+        return apiFetch("/api/availability", { method: "POST", body: data });
+      },
+      deleteAvailability: function (id) { return apiFetch("/api/availability/" + encodeURIComponent(id), { method: "DELETE" }); },
+      listRequests: function () {
+        return apiFetch("/api/requests").then(function (res) { return (res.requests || []).map(mapRequest); });
+      },
+      addRequest: function (data) {
+        return apiFetch("/api/requests", {
+          method: "POST",
+          body: {
+            direction: data.direction, tutorEmail: data.tutorEmail, parentEmail: data.parentEmail,
+            childName: data.childName, cohort: data.cohort, kind: data.kind, firstDate: data.firstDate,
+            start: data.start, end: data.end, renewalOf: data.renewalOf
+          }
+        });
+      },
+      updateRequest: function (id, data) { return apiFetch("/api/requests/" + encodeURIComponent(id), { method: "PATCH", body: data }); },
+      deleteRequest: function (id) { return apiFetch("/api/requests/" + encodeURIComponent(id), { method: "DELETE" }); },
+      listBookings: function () {
+        return apiFetch("/api/bookings").then(function (res) { return (res.bookings || []).map(mapBooking); });
+      },
+      addBooking: function (data) {
+        return apiFetch("/api/bookings", {
+          method: "POST",
+          body: {
+            requestId: data.requestId, tutorEmail: data.tutorEmail, parentEmail: data.parentEmail,
+            childName: data.childName, cohort: data.cohort, date: data.date, start: data.start, end: data.end
+          }
+        });
+      },
+      updateBooking: function (id, data) { return apiFetch("/api/bookings/" + encodeURIComponent(id), { method: "PATCH", body: data }); },
+      deleteBooking: function (id) { return apiFetch("/api/bookings/" + encodeURIComponent(id), { method: "DELETE" }); },
+      listResources: function () {
+        return apiFetch("/api/resources").then(function (res) { return (res.resources || []).map(mapResource); });
+      },
+      addResource: function (formData) { return apiFetch("/api/resources", { method: "POST", body: formData }); },
+      deleteResource: function (id) { return apiFetch("/api/resources/" + encodeURIComponent(id), { method: "DELETE" }); },
+      listUsers: function () {
+        return apiFetch("/api/users").then(function (res) { return res.users || []; });
+      },
+      deleteUser: function (email) { return apiFetch("/api/users/" + encodeURIComponent(email), { method: "DELETE" }); },
+      listArchive: function () {
+        return apiFetch("/api/archive").then(function (res) {
+          return (res.archive || []).map(function (r) {
+            return {
+              id: r.email, email: r.email, role: r.role, name: r.name, isFounder: !!r.is_founder,
+              photoDataUrl: r.photo_data_url, teamsLink: r.teams_link, childName: r.child_name,
+              cohort: r.cohort, board: r.board, archivedAt: r.archived_at, archivedBy: r.archived_by
+            };
+          });
+        });
+      },
+      restoreArchive: function (email) { return apiFetch("/api/archive/" + encodeURIComponent(email) + "/restore", { method: "POST" }); }
+    };
+  }
+
+  // ---------- modal system ----------
+  var modalBackdrop = document.getElementById("modalBackdrop");
+  var modalBody = document.getElementById("modalBody");
+  document.getElementById("modalCloseBtn").addEventListener("click", closeModal);
+  modalBackdrop.addEventListener("click", function (e) { if (e.target === modalBackdrop) closeModal(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeModal(); });
+
+  function openModal(html, opts) {
+    modalBody.innerHTML = html;
+    modalBackdrop.classList.add("show");
+    var card = document.getElementById("modalCard");
+    if (card) card.classList.toggle("wide", !!(opts && opts.wide));
+  }
+  function closeModal() { modalBackdrop.classList.remove("show"); modalBody.innerHTML = ""; }
+
+  // ---------- render root ----------
+  var app = document.getElementById("app");
+  var topActions = document.getElementById("topActions");
+
+  function renderTopActions() {
+    if (state.user) {
+      topActions.innerHTML =
+        '<span class="who">Signed in as <strong>' + esc(state.user.name) + "</strong></span>" +
+        '<button class="btn secondary small" id="logoutBtn">Log out</button>';
+      document.getElementById("logoutBtn").addEventListener("click", function () {
+        state.user = null;
+        state.sessionToken = null;
+        try { sessionStorage.removeItem("passframe_portal_user"); sessionStorage.removeItem("passframe_portal_token"); } catch (e) {}
+        renderAll();
+      });
+    } else {
+      topActions.innerHTML = '<button class="btn small" id="headerLoginBtn">Log in</button>';
+      document.getElementById("headerLoginBtn").addEventListener("click", function () { openAuthModal(); });
+    }
+  }
+
+  function renderAll() {
+    renderTopActions();
+    if (!state.user) { renderLoggedOutHome(); }
+    else if (state.user.role === "tutor") { renderTutorDashboard(); }
+    else { renderParentDashboard(); }
+  }
+
+  // No more capability-availability concept now that this is a real site talking to a
+  // real API — failures surface per-action (a failed save shows its own error message)
+  // rather than as a standing banner, so this always renders nothing.
+  function capabilityBanner() {
+    return "";
+  }
+
+  // ---------- LOGGED-OUT LANDING ----------
+  function renderLoggedOutHome() {
+    app.innerHTML =
+      capabilityBanner() +
+      '<div class="hero-panel">' +
+        "<h1>PassFrame Portal</h1>" +
+        "<p>For tutors and enrolled families — manage availability, book lessons, and share lesson resources.</p>" +
+        '<button class="btn" id="heroLoginBtn">Log in</button>' +
+        '<div class="hero-points">' +
+          '<div class="hero-point"><strong>Requests</strong><span>Ask a specific tutor for a regular weekly time — they accept or decline.</span></div>' +
+          '<div class="hero-point"><strong>Recurring lessons</strong><span>An accepted request books the same day and time for 4 weeks.</span></div>' +
+          '<div class="hero-point"><strong>Resources</strong><span>Mark schemes, lessons, homework, and more.</span></div>' +
+        "</div>" +
+      "</div>";
+    document.getElementById("heroLoginBtn").addEventListener("click", function () { openAuthModal(); });
+  }
+
+  // ---------- AUTH MODAL ----------
+  function openAuthModal() { openModal(authModalHtml()); wireAuthModal(); }
+
+  function isValidEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+  function isValidLoginId(v) {
+    if (isValidEmail(v)) return true;
+    return /^[a-z0-9][a-z0-9._-]{2,63}$/.test(v);
+  }
+
+  function authModalHtml() {
+    return "<h2>PassFrame Portal</h2>" +
+      '<label for="liEmail">Email or username</label>' +
+      '<input type="text" id="liEmail" autocomplete="username" placeholder="you@example.com">' +
+      '<label for="liPin">4-digit PIN</label>' +
+      '<input type="password" inputmode="numeric" maxlength="4" id="liPin" autocomplete="current-password" placeholder="0000">' +
+      '<button class="btn" id="liGo" style="margin-top:16px;width:100%">Log in</button>' +
+      '<div class="msg" id="liMsg"></div>' +
+      '<p style="margin-top:16px;font-size:0.82rem;color:var(--muted)">New family? Your tutor sets up your login — ask them for your email and PIN.</p>';
+  }
+
+  function wireAuthModal() {
+    document.getElementById("liGo").addEventListener("click", doLogin);
+    document.getElementById("liPin").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
+  }
+
+  function doLogin() {
+    var email = document.getElementById("liEmail").value.trim().toLowerCase();
+    var pin = document.getElementById("liPin").value.trim();
+    var msg = document.getElementById("liMsg");
+    msg.textContent = ""; msg.className = "msg";
+    if (!email || !isValidLoginId(email)) { msg.textContent = "Enter your email or username."; msg.className = "msg error"; return; }
+    if (!/^\d{4}$/.test(pin)) { msg.textContent = "PIN must be 4 digits."; msg.className = "msg error"; return; }
+    // The server checks the PIN, tracks failed attempts, and handles lockout itself —
+    // the client just sends the attempt and shows back whatever it says.
+    apiFetch("/api/login", { method: "POST", body: { email: email, pin: pin } }).then(function (res) {
+      state.user = res.user;
+      state.sessionToken = res.token;
+      try {
+        sessionStorage.setItem("passframe_portal_user", JSON.stringify(state.user));
+        sessionStorage.setItem("passframe_portal_token", state.sessionToken);
+      } catch (e) {}
+      closeModal();
+      renderAll();
+    }).catch(function (err) {
+      msg.textContent = err.message || "Couldn’t reach the portal. Try again in a moment.";
+      msg.className = "msg error";
+    });
+  }
+
+  // ---------- TUTOR DASHBOARD ----------
+  var tutorCalYear, tutorCalMonth, tutorBookingsCache = [], tutorAvailCache = [], tutorStudentsCache = [];
+
+  function renderTutorDashboard() {
+    var u = state.user;
+    var now = new Date();
+    tutorCalYear = now.getFullYear();
+    tutorCalMonth = now.getMonth();
+    app.innerHTML =
+      capabilityBanner() +
+      '<div class="hello-row">' +
+        '<div class="avatar">' + (u.photoDataUrl ? '<img src="' + u.photoDataUrl + '" alt="">' : esc((u.name || "?")[0])) + "</div>" +
+        "<div><h2><span style=\"color:var(--brand)\">Hello</span>, " + esc(u.name) + "!</h2>" + (u.isFounder ? '<span class="founder-badge">Founder</span>' : '<span class="role-tag">Tutor</span>') + "</div>" +
+      "</div>" +
+      '<div class="card">' +
+        "<h3>Your lessons calendar</h3>" +
+        '<p style="color:var(--muted);font-size:0.9rem">Every lesson booked through an accepted request shows up here. Click a date to mark a lesson complete, join by Teams, cancel just that week, or mark times you\'re free.</p>' +
+        '<div class="cal-with-sidebar">' +
+          '<div id="tutorCal" class="cal-main"></div>' +
+          '<div class="cal-sidebar">' +
+            '<div class="stat-tile"><strong id="tutorMonthHours">0.0</strong><span id="tutorMonthHoursLabel">Hours completed this month</span></div>' +
+            '<div class="stat-tile"><strong id="tutorNextLesson" style="font-size:0.95rem">—</strong><span>Next lesson</span></div>' +
+          "</div>" +
+        "</div>" +
+      "</div>" +
+      accordionCard("Requests",
+        '<p style="color:var(--muted);font-size:0.9rem">Recurring weekly lessons are booked by request — accept an incoming request, or send one to a family for a regular day and time.</p>' +
+        '<div id="tutorRequests"></div>'
+      ) +
+      accordionCard("Video call link",
+        '<p style="color:var(--muted);font-size:0.9rem">Paste your personal Microsoft Teams meeting link. It’ll show up as a “Join Teams call” button on your booked sessions, and on the same sessions for the family you’re teaching.</p>' +
+        '<label for="teamsLinkInput">Teams link</label>' +
+        '<input type="url" id="teamsLinkInput" placeholder="https://teams.microsoft.com/l/meetup-join/...">' +
+        '<button class="btn small" id="teamsLinkSave" style="margin-top:12px">Save</button>' +
+        '<div class="msg" id="teamsLinkMsg"></div>'
+      ) +
+      accordionCard("Resources",
+        '<p style="color:var(--muted);font-size:0.9rem">Mark schemes, lessons, homework and resource lists — pick a board, then a category, then (for Maths/English/VR/NVR) a year group.</p>' +
+        '<div class="cat-tabs" id="resBoardTabs"></div>' +
+        '<div class="cat-tabs" id="resTabs"></div>' +
+        '<div class="cat-tabs" id="resSubTabs" style="margin-top:-6px"></div>' +
+        '<div class="cat-tabs" id="resYearTabs" style="margin-top:-6px"></div>' +
+        '<div id="resUploadArea"></div>' +
+        '<div id="resList" style="margin-top:16px"></div>'
+      ) +
+      accordionCard("Syllabus",
+        '<p style="color:var(--muted);font-size:0.9rem">The full week-by-week teaching syllabus — Kent, Bexley, and the combined Kent &amp; Bexley track — each covering Year 4, Year 4 Pt 2, and Year 5 Accelerated. Ask PassFrame founders for an updated version if a syllabus changes.</p>' +
+        '<div id="sylList"></div>'
+      ) +
+      (u.isFounder ? (
+        accordionCard("Manage student accounts",
+          '<p style="color:var(--muted);font-size:0.9rem">Add or remove a family’s login — there’s no public sign-up.</p>' +
+          '<label for="stuParent">Parent’s name</label>' +
+          '<input type="text" id="stuParent">' +
+          '<label for="stuChild">Child’s name</label>' +
+          '<input type="text" id="stuChild">' +
+          '<label for="stuEmail">Email</label>' +
+          '<input type="email" id="stuEmail" autocomplete="off">' +
+          '<label for="stuCohort">Child’s group</label>' +
+          '<select id="stuCohort">' + COHORTS.map(function (c) { return '<option value="' + c.id + '">' + c.label + "</option>"; }).join("") + "</select>" +
+          '<label for="stuBoard">Exam board</label>' +
+          '<select id="stuBoard">' + BOARDS.map(function (b) { return '<option value="' + b.id + '">' + b.label + "</option>"; }).join("") + "</select>" +
+          '<label for="stuPin">4-digit PIN</label>' +
+          '<input type="password" inputmode="numeric" maxlength="4" id="stuPin" placeholder="0000">' +
+          '<button class="btn" id="stuAdd" style="margin-top:16px">Add student login</button>' +
+          '<div class="msg" id="stuMsg"></div>' +
+          '<div id="stuList" style="margin-top:20px"></div>'
+        ) +
+        accordionCard("Manage tutor accounts",
+          '<p style="color:var(--muted);font-size:0.9rem">Add or remove a tutor’s login. A login doesn’t need to be a real email address — a plain username works too.</p>' +
+          '<label for="tutName">Tutor’s name</label>' +
+          '<input type="text" id="tutName">' +
+          '<label for="tutId">Email or username (used to log in)</label>' +
+          '<input type="text" id="tutId" autocomplete="off">' +
+          '<label for="tutPin">4-digit PIN</label>' +
+          '<input type="password" inputmode="numeric" maxlength="4" id="tutPin" placeholder="0000">' +
+          '<label for="tutPhoto">Photo (optional)</label>' +
+          '<input type="file" id="tutPhoto" accept="image/*">' +
+          '<label class="checkbox-row" for="tutFounder"><input type="checkbox" id="tutFounder"> Founder access (gold badge, View tutors, Email anyone, upload files)</label>' +
+          '<button class="btn" id="tutAdd" style="margin-top:16px">Add tutor login</button>' +
+          '<div class="msg" id="tutMsg"></div>' +
+          '<div id="tutList" style="margin-top:20px"></div>'
+        ) +
+        accordionCard("View tutors",
+          '<p style="color:var(--muted);font-size:0.9rem">See any tutor’s availability calendar, completed hours, and which students they’ve tutored.</p>' +
+          '<button class="btn secondary" id="openViewTutors">View tutors</button>'
+        ) +
+        accordionCard("Email anyone",
+          '<p style="color:var(--muted);font-size:0.9rem">Opens your email app with the message ready to send. We’ll CC ' + esc(PASSFRAME_INBOX) + ' automatically so it’s kept on file.</p>' +
+          '<label for="mailTo">To</label>' +
+          '<input type="email" id="mailTo" placeholder="name@example.com" autocomplete="off">' +
+          '<label for="mailSubject">Subject</label>' +
+          '<input type="text" id="mailSubject">' +
+          '<label for="mailBody">Message</label>' +
+          '<textarea id="mailBody" rows="5"></textarea>' +
+          '<button class="btn" id="mailSend" style="margin-top:16px;width:100%">Open in email app</button>' +
+          '<div class="msg" id="mailMsg"></div>'
+        ) +
+        accordionCard("Archive",
+          '<p style="color:var(--muted);font-size:0.9rem">Removed tutor and student logins land here rather than disappearing — a record for audit purposes, with a Restore option.</p>' +
+          '<div id="archiveList"></div>'
+        )
+      ) : "");
+
+    loadTutorCalendarData().then(drawTutorCalendar);
+    renderTutorRequests();
+    loadStudentsCache();
+    renderResourceTabs("combined", "Mark schemes");
+    renderSyllabusList();
+    wireTeamsLink();
+    if (u.isFounder) {
+      wireStudentManagement();
+      loadStudentList();
+      wireTutorEmailTool();
+      wireTutorManagement();
+      loadTutorList();
+      loadArchiveList();
+      document.getElementById("openViewTutors").addEventListener("click", openViewTutorsModal);
+    }
+  }
+
+  function wireStudentManagement() {
+    document.getElementById("stuAdd").addEventListener("click", function () {
+      var parent = document.getElementById("stuParent").value.trim();
+      var child = document.getElementById("stuChild").value.trim();
+      var email = document.getElementById("stuEmail").value.trim().toLowerCase();
+      var cohort = document.getElementById("stuCohort").value;
+      var board = document.getElementById("stuBoard").value;
+      var pin = document.getElementById("stuPin").value.trim();
+      var msg = document.getElementById("stuMsg");
+      msg.textContent = ""; msg.className = "msg";
+      if (!parent || !child) { msg.textContent = "Enter both names."; msg.className = "msg error"; return; }
+      if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) { msg.textContent = "Enter a valid email."; msg.className = "msg error"; return; }
+      if (!/^\d{4}$/.test(pin)) { msg.textContent = "PIN must be 4 digits."; msg.className = "msg error"; return; }
+      getStore().then(function (s) {
+        return s.createUser({ email: email, pin: pin, role: "parent", name: parent, childName: child, cohort: cohort, board: board }).then(function () {
+          msg.textContent = "Added."; msg.className = "msg ok";
+          document.getElementById("stuParent").value = "";
+          document.getElementById("stuChild").value = "";
+          document.getElementById("stuEmail").value = "";
+          document.getElementById("stuPin").value = "";
+          loadStudentList();
+        });
+      }).catch(function (err) { msg.textContent = err.message || "Couldn’t save — check your access."; msg.className = "msg error"; });
+    });
+  }
+
+  // Every tutor needs resolved student names for their own calendar (e.g. "Aisha Khan (Amir Khan)"
+  // on a 1:1 slot), even though only founders see the management UI below.
+  function loadStudentsCache() {
+    return getStore().then(function (s) { return s ? s.listUsers() : []; }).then(function (all) {
+      var families = all.filter(function (u) { return u.role === "parent"; })
+        .sort(function (a, b) { return (a.name || "").localeCompare(b.name || ""); });
+      tutorStudentsCache = families;
+      return families;
+    }).catch(function () { tutorStudentsCache = []; return []; });
+  }
+
+  function studentLabelByEmail(email) {
+    var record = tutorStudentsCache.filter(function (f) { return f.email === email; })[0];
+    return record ? (record.childName + " (" + record.name + ")") : email;
+  }
+
+  // Every tutor (not just founders) manages their own personal Teams link — it's their own
+  // contact info, not an account-management action, so it isn't founder-gated.
+  function wireTeamsLink() {
+    var input = document.getElementById("teamsLinkInput");
+    var btn = document.getElementById("teamsLinkSave");
+    if (!input || !btn) return;
+    input.value = state.user.teamsLink || "";
+    btn.addEventListener("click", function () {
+      var msg = document.getElementById("teamsLinkMsg");
+      var val = input.value.trim();
+      msg.textContent = ""; msg.className = "msg";
+      if (val && !/^https?:\/\//i.test(val)) { msg.textContent = "Enter a full link starting with https://"; msg.className = "msg error"; return; }
+      getStore().then(function (s) {
+        return s.setUser(state.user.email, { teamsLink: val });
+      }).then(function () {
+        state.user.teamsLink = val;
+        try { sessionStorage.setItem("passframe_portal_user", JSON.stringify(state.user)); } catch (e) {}
+        msg.textContent = val ? "Saved." : "Removed.";
+        msg.className = "msg ok";
+      }).catch(function (err) { msg.textContent = err.message || "Couldn’t save — check your access."; msg.className = "msg error"; });
+    });
+  }
+
+  // Removing a tutor or student never just deletes them — the record moves into the "archive"
+  // collection first (with who removed it and when) so founders can still see who used to be
+  // active, then the live login is deleted so they can no longer sign in.
+  // The server archives (recording who removed it and when) and deletes the login in a
+  // single atomic call, so there's no separate archive-then-delete step here anymore.
+  function archiveAndDeleteUser(id, userData) {
+    return getStore().then(function (s) { return s.deleteUser(id); });
+  }
+
+  function refreshAfterRemoval() {
+    loadStudentList();
+    loadTutorList();
+    loadArchiveList();
+  }
+
+  // Small "Actions ▾" dropdown menus, used wherever a destructive action (removing a tutor or
+  // student) shouldn't be a single stray click away. Only one menu-item exists today (Remove),
+  // but the pattern leaves room for more without another confirm-dialog rewrite.
+  function closeAllActionsMenus() {
+    Array.prototype.forEach.call(document.querySelectorAll(".actions-dropdown.show"), function (dd) {
+      dd.classList.remove("show");
+    });
+  }
+  document.addEventListener("click", closeAllActionsMenus);
+
+  function wireActionsMenus(scopeEl) {
+    Array.prototype.forEach.call(scopeEl.querySelectorAll(".actions-btn"), function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var dd = btn.nextElementSibling;
+        var wasOpen = dd.classList.contains("show");
+        closeAllActionsMenus();
+        if (!wasOpen) dd.classList.add("show");
+      });
+    });
+  }
+
+  // Replaces window.confirm() for removals: a proper modal naming who's about to be removed,
+  // with an explicit Cancel escape hatch.
+  function confirmRemoveModal(name, onConfirm) {
+    openModal(
+      "<h3>Are you sure you want to remove " + esc(name) + "?</h3>" +
+      '<p style="color:var(--muted);font-size:0.9rem">They’ll no longer be able to sign in. The account moves to the Archive, where it can be restored later.</p>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">' +
+        '<button class="btn secondary small" id="confirmRemoveCancel" type="button">Cancel</button>' +
+        '<button class="btn danger small" id="confirmRemoveGo" type="button">Remove</button>' +
+      "</div>"
+    );
+    document.getElementById("confirmRemoveCancel").addEventListener("click", closeModal);
+    document.getElementById("confirmRemoveGo").addEventListener("click", function () {
+      closeModal();
+      onConfirm();
+    });
+  }
+
+  // Lets a founder set a new PIN for any login — tutor, student, or a founder's own — without
+  // needing the old one. Same "load the existing record, overwrite just one field, save it back"
+  // pattern as the Teams-link save, so every other field on the account is left untouched.
+  function openChangePinModal(id, displayName) {
+    openModal(
+      "<h3>Change PIN for " + esc(displayName) + "</h3>" +
+      '<p style="color:var(--muted);font-size:0.9rem">Login: <strong>' + esc(id) + "</strong></p>" +
+      '<label for="cpNew">New 4-digit PIN</label>' +
+      '<input type="password" inputmode="numeric" maxlength="4" id="cpNew" autocomplete="new-password" placeholder="0000">' +
+      '<label for="cpConfirm">Confirm new PIN</label>' +
+      '<input type="password" inputmode="numeric" maxlength="4" id="cpConfirm" autocomplete="new-password" placeholder="0000">' +
+      '<button class="btn" id="cpGo" style="margin-top:16px;width:100%">Save new PIN</button>' +
+      '<div class="msg" id="cpMsg"></div>'
+    );
+    document.getElementById("cpGo").addEventListener("click", function () {
+      var p1 = document.getElementById("cpNew").value.trim();
+      var p2 = document.getElementById("cpConfirm").value.trim();
+      var msg = document.getElementById("cpMsg");
+      msg.textContent = ""; msg.className = "msg";
+      if (!/^\d{4}$/.test(p1)) { msg.textContent = "PIN must be 4 digits."; msg.className = "msg error"; return; }
+      if (p1 !== p2) { msg.textContent = "PINs don’t match."; msg.className = "msg error"; return; }
+      getStore().then(function (s) {
+        return s.setPin(id, p1).then(function () {
+          closeModal();
+          refreshAfterRemoval();
+        });
+      }).catch(function (err) { msg.textContent = err.message || "Couldn’t save — check your access."; msg.className = "msg error"; });
+    });
+  }
+
+  function loadStudentList() {
+    var el = document.getElementById("stuList");
+    if (!el) return;
+    el.innerHTML = '<p class="empty">Loading…</p>';
+    loadStudentsCache().then(function (families) {
+      if (!families.length) { el.innerHTML = '<p class="empty">No student logins yet.</p>'; return; }
+      el.innerHTML = families.map(function (f) {
+        var fullName = f.name + " — " + f.childName;
+        return '<div class="slot-item"><div class="slot-main"><span class="slot-day">' + esc(f.name) + " — " + esc(f.childName) + ' <span class="student-badge small">Student</span></span>' +
+          '<span class="slot-time">' + esc(cohortLabel(f.cohort)) + " · " + esc(boardLabel(f.board)) + '</span>' +
+          '<span class="slot-credentials">Login: <strong>' + esc(f.email) + "</strong></span></div>" +
+          '<div class="actions-menu"><button class="btn secondary small actions-btn" type="button">Actions ▾</button>' +
+            '<div class="actions-dropdown">' +
+              '<button class="menu-item" type="button" data-pin-email="' + esc(f.email) + '" data-pin-name="' + esc(fullName) + '">Change PIN</button>' +
+              '<button class="menu-item danger" type="button" data-remove-email="' + esc(f.email) + '" data-remove-name="' + esc(fullName) + '">Remove</button>' +
+            "</div>" +
+          "</div></div>";
+      }).join("");
+      wireActionsMenus(el);
+      Array.prototype.forEach.call(el.querySelectorAll("[data-pin-email]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var email = btn.getAttribute("data-pin-email");
+          var name = btn.getAttribute("data-pin-name");
+          closeAllActionsMenus();
+          openChangePinModal(email, name);
+        });
+      });
+      Array.prototype.forEach.call(el.querySelectorAll("[data-remove-email]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var email = btn.getAttribute("data-remove-email");
+          var name = btn.getAttribute("data-remove-name");
+          var record = tutorStudentsCache.filter(function (f) { return f.email === email; })[0] || {};
+          closeAllActionsMenus();
+          confirmRemoveModal(name, function () {
+            archiveAndDeleteUser(email, record).then(refreshAfterRemoval);
+          });
+        });
+      });
+    }).catch(function () { el.innerHTML = '<p class="empty">Couldn’t load student logins.</p>'; });
+  }
+
+  function wireTutorManagement() {
+    var addBtn = document.getElementById("tutAdd");
+    if (!addBtn) return;
+    var founderCheckbox = document.getElementById("tutFounder");
+    if (founderCheckbox) {
+      founderCheckbox.addEventListener("change", function () {
+        if (!founderCheckbox.checked) return;
+        var name = document.getElementById("tutName").value.trim() || "this tutor";
+        founderCheckbox.checked = false;
+        openModal(
+          "<h3>Are you sure you want to give " + esc(name) + " Founder access?</h3>" +
+          '<p style="color:var(--muted);font-size:0.9rem">Founder access adds the gold badge and lets them view all tutors’ sessions, email anyone, upload files, and manage tutor and student accounts.</p>' +
+          '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">' +
+            '<button class="btn secondary small" id="confirmFounderCancel" type="button">Cancel</button>' +
+            '<button class="btn small" id="confirmFounderGo" type="button">Give Founder access</button>' +
+          "</div>"
+        );
+        document.getElementById("confirmFounderCancel").addEventListener("click", closeModal);
+        document.getElementById("confirmFounderGo").addEventListener("click", function () {
+          founderCheckbox.checked = true;
+          closeModal();
+        });
+      });
+    }
+    addBtn.addEventListener("click", function () {
+      var name = document.getElementById("tutName").value.trim();
+      var id = document.getElementById("tutId").value.trim().toLowerCase();
+      var pin = document.getElementById("tutPin").value.trim();
+      var isFounderNew = document.getElementById("tutFounder").checked;
+      var fileInput = document.getElementById("tutPhoto");
+      var msg = document.getElementById("tutMsg");
+      msg.textContent = ""; msg.className = "msg";
+      if (!name) { msg.textContent = "Enter the tutor’s name."; msg.className = "msg error"; return; }
+      if (!id || !isValidLoginId(id)) { msg.textContent = "Enter a valid email or username (letters/numbers, 3+ characters)."; msg.className = "msg error"; return; }
+      if (!/^\d{4}$/.test(pin)) { msg.textContent = "PIN must be 4 digits."; msg.className = "msg error"; return; }
+      addBtn.disabled = true;
+      var hasFile = fileInput.files && fileInput.files[0];
+      // No more "assets" capability to upload a photo to — just read it straight into a
+      // data URL in-browser and send it as a plain string; the backend's photoDataUrl
+      // field already accepts any data URL.
+      var photoPromise = hasFile ? fileToDataUrl(fileInput.files[0]).catch(function () { return null; }) : Promise.resolve(null);
+      photoPromise.then(function (photoUrl) {
+        var data = { email: id, pin: pin, role: "tutor", name: name };
+        if (isFounderNew) data.isFounder = true;
+        if (photoUrl) data.photoDataUrl = photoUrl;
+        return getStore().then(function (s) { return s.createUser(data); });
+      }).then(function () {
+        msg.textContent = "Tutor login added."; msg.className = "msg ok";
+        document.getElementById("tutName").value = "";
+        document.getElementById("tutId").value = "";
+        document.getElementById("tutPin").value = "";
+        document.getElementById("tutFounder").checked = false;
+        fileInput.value = "";
+        loadTutorList();
+      }).catch(function (err) { msg.textContent = err.message || "Couldn’t save — check your access."; msg.className = "msg error"; })
+        .then(function () { addBtn.disabled = false; });
+    });
+  }
+
+  function loadTutorList() {
+    var el = document.getElementById("tutList");
+    if (!el) return;
+    el.innerHTML = '<p class="empty">Loading…</p>';
+    getStore().then(function (s) { return s ? s.listUsers() : []; }).then(function (all) {
+      var tutors = all.filter(function (u) { return u.role === "tutor"; })
+        .sort(function (a, b) { return (a.name || "").localeCompare(b.name || ""); });
+      if (!tutors.length) { el.innerHTML = '<p class="empty">No tutor logins yet.</p>'; return; }
+      el.innerHTML = tutors.map(function (t) {
+        var isSelf = t.email === state.user.email;
+        return '<div class="slot-item"><div class="tutor-row">' +
+          '<div class="tutor-row-avatar">' + (t.photoDataUrl ? '<img src="' + esc(t.photoDataUrl) + '" alt="">' : esc((t.name || "?")[0])) + "</div>" +
+          '<div class="slot-main"><span class="slot-day">' + esc(t.name) + " " + (t.isFounder ? '<span class="founder-badge small">Founder</span>' : '<span class="role-tag small">Tutor</span>') + (isSelf ? " (you)" : "") + "</span>" +
+          '<span class="slot-credentials">Login: <strong>' + esc(t.email) + "</strong></span></div></div>" +
+          '<div class="actions-menu"><button class="btn secondary small actions-btn" type="button">Actions ▾</button>' +
+            '<div class="actions-dropdown">' +
+              '<button class="menu-item" type="button" data-pin-tutor="' + esc(t.email) + '" data-pin-name="' + esc(t.name) + (isSelf ? " (you)" : "") + '">Change PIN</button>' +
+              ((isSelf || t.isFounder) ? "" : '<button class="menu-item danger" type="button" data-remove-tutor="' + esc(t.email) + '" data-remove-name="' + esc(t.name) + '">Remove</button>') +
+            "</div>" +
+          "</div>" +
+        "</div>";
+      }).join("");
+      wireActionsMenus(el);
+      Array.prototype.forEach.call(el.querySelectorAll("[data-pin-tutor]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var email = btn.getAttribute("data-pin-tutor");
+          var name = btn.getAttribute("data-pin-name");
+          closeAllActionsMenus();
+          openChangePinModal(email, name);
+        });
+      });
+      Array.prototype.forEach.call(el.querySelectorAll("[data-remove-tutor]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var email = btn.getAttribute("data-remove-tutor");
+          var name = btn.getAttribute("data-remove-name");
+          var record = tutors.filter(function (t) { return t.email === email; })[0] || {};
+          closeAllActionsMenus();
+          confirmRemoveModal(name, function () {
+            archiveAndDeleteUser(email, record).then(refreshAfterRemoval);
+          });
+        });
+      });
+    }).catch(function () { el.innerHTML = '<p class="empty">Couldn’t load tutor logins.</p>'; });
+  }
+
+  function loadArchiveList() {
+    var el = document.getElementById("archiveList");
+    if (!el) return;
+    el.innerHTML = '<p class="empty">Loading…</p>';
+    getStore().then(function (s) { return s ? s.listArchive() : []; }).then(function (all) {
+      var rows = all.slice().sort(function (a, b) {
+        return (b.archivedAt || "").localeCompare(a.archivedAt || "");
+      });
+      if (!rows.length) { el.innerHTML = '<p class="empty">Nothing archived yet — removed tutors and students will show up here.</p>'; return; }
+      el.innerHTML = rows.map(function (r) {
+        var roleBadge = r.role === "tutor"
+          ? (r.isFounder ? '<span class="founder-badge small">Founder</span>' : '<span class="role-tag small">Tutor</span>')
+          : '<span class="student-badge small">Student</span>';
+        var who = r.role === "tutor" ? esc(r.name) : esc(r.name) + " — " + esc(r.childName);
+        var archivedWhen = r.archivedAt ? new Date(r.archivedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "unknown date";
+        return '<div class="slot-item"><div class="slot-main"><span class="slot-day">' + who + " " + roleBadge + "</span>" +
+          '<span class="slot-credentials">Login: <strong>' + esc(r.id) + "</strong></span>" +
+          '<span class="slot-time">Removed ' + esc(archivedWhen) + (r.archivedBy ? " by " + esc(r.archivedBy) : "") + "</span></div>" +
+          '<button class="btn secondary small" data-restore-id="' + esc(r.id) + '">Restore</button></div>';
+      }).join("");
+      Array.prototype.forEach.call(el.querySelectorAll("[data-restore-id]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var id = btn.getAttribute("data-restore-id");
+          // The server checks for a live-login conflict and does the restore atomically.
+          getStore().then(function (s) { return s.restoreArchive(id); }).then(refreshAfterRemoval).catch(function (err) {
+            window.alert(err.message || ("A login already exists for “" + id + "”. Remove or rename it before restoring this one."));
+          });
+        });
+      });
+    }).catch(function () { el.innerHTML = '<p class="empty">Couldn’t load the archive.</p>'; });
+  }
+
+  function wireTutorEmailTool() {
+    var btn = document.getElementById("mailSend");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      var to = document.getElementById("mailTo").value.trim();
+      var subject = document.getElementById("mailSubject").value.trim();
+      var body = document.getElementById("mailBody").value;
+      var msg = document.getElementById("mailMsg");
+      msg.textContent = ""; msg.className = "msg";
+      if (!to || !/^[^@]+@[^@]+\.[^@]+$/.test(to)) { msg.textContent = "Enter a valid recipient email."; msg.className = "msg error"; return; }
+      window.location.href = mailtoHref(to, subject, body, PASSFRAME_INBOX);
+      msg.textContent = "Opening your email app…"; msg.className = "msg ok";
+    });
+  }
+
+  function loadTutorCalendarData() {
+    return Promise.all([
+      getStore().then(function (s) { return s ? s.listBookings() : []; }),
+      getStore().then(function (s) { return s ? s.listAvailability() : []; })
+    ]).then(function (res) {
+      tutorBookingsCache = res[0].filter(function (b) { return b.tutorEmail === state.user.email; });
+      tutorAvailCache = res[1].filter(function (a) { return a.tutorEmail === state.user.email; });
+    });
+  }
+
+  // "Lesson with X in N days" / "No lessons scheduled" — the earliest today-or-later booking.
+  function nextLessonLabel(bookings) {
+    var t = todayIso();
+    var upcoming = bookings.filter(function (b) { return b.date >= t; }).sort(function (a, b) { return a.date.localeCompare(b.date); });
+    if (!upcoming.length) return "No lessons scheduled";
+    var next = upcoming[0];
+    var days = Math.round((new Date(next.date + "T00:00:00") - new Date(t + "T00:00:00")) / 86400000);
+    var when = days === 0 ? "today" : days === 1 ? "tomorrow" : "in " + days + " days";
+    return "Lesson with " + next.childName + " " + when;
+  }
+
+  function drawTutorCalendar() {
+    var now = new Date();
+    renderMonthGrid("tutorCal", tutorCalYear, tutorCalMonth, function (iso) {
+      var lessonsHere = tutorBookingsCache.filter(function (b) { return b.date === iso; });
+      var availHere = tutorAvailCache.filter(function (a) { return a.date === iso; });
+      var total = lessonsHere.length + availHere.length;
+      if (!total) return null;
+      var anyCompleted = lessonsHere.some(function (b) { return b.completed; });
+      return { badge: String(total), extraClass: anyCompleted ? "has-available" : "has-slots" };
+    }, function (iso) {
+      renderTutorDateModal(iso);
+    }, function (y, m) {
+      tutorCalYear = y; tutorCalMonth = m;
+      drawTutorCalendar();
+    });
+    var hoursEl = document.getElementById("tutorMonthHours");
+    if (hoursEl) hoursEl.textContent = sumCompletedHoursForMonth(tutorBookingsCache, tutorCalYear, tutorCalMonth).toFixed(1);
+    var hoursLabelEl = document.getElementById("tutorMonthHoursLabel");
+    if (hoursLabelEl) {
+      var isCurrentCalMonth = (tutorCalYear === now.getFullYear() && tutorCalMonth === now.getMonth());
+      hoursLabelEl.textContent = isCurrentCalMonth ? "Hours completed this month" :
+        "Hours completed in " + MONTH_NAMES[tutorCalMonth] + (tutorCalYear !== now.getFullYear() ? " " + tutorCalYear : "");
+    }
+    var nextEl = document.getElementById("tutorNextLesson");
+    if (nextEl) nextEl.textContent = nextLessonLabel(tutorBookingsCache);
+  }
+
+  function renderTutorDateModal(iso) {
+    var lessons = tutorBookingsCache.filter(function (b) { return b.date === iso; }).sort(function (a, b) { return a.start.localeCompare(b.start); });
+    var lessonsHtml = lessons.length ? lessons.map(function (b) {
+      var joinBtn = state.user.teamsLink
+        ? '<a class="btn secondary small" href="' + esc(state.user.teamsLink) + '" target="_blank" rel="noopener">Join Teams call</a>'
+        : "";
+      return '<div class="day-slot-item' + (b.completed ? " completed" : "") + '">' +
+        '<div class="day-slot-main"><strong>' + esc(b.start) + "–" + esc(b.end) + "</strong>" +
+        '<span>' + esc(b.childName) + " · " + esc(cohortLabel(b.cohort)) + "</span></div>" +
+        '<div class="day-slot-actions">' +
+          joinBtn +
+          '<label class="slot-complete"><input type="checkbox" data-tb-complete-id="' + b.id + '"' + (b.completed ? " checked" : "") + '> Completed</label>' +
+          '<button class="btn danger small" data-tb-cancel-id="' + b.id + '">Cancel this week</button>' +
+        "</div>" +
+      "</div>";
+    }).join("") : '<p class="empty">No lessons booked for this date.</p>';
+
+    function renderAvailHtml() {
+      var avail = tutorAvailCache.filter(function (a) { return a.date === iso; }).sort(function (a, b) { return a.start.localeCompare(b.start); });
+      return avail.length ? avail.map(function (a) {
+        var who = a.studentEmail ? ("Marked as available for " + studentLabelByEmail(a.studentEmail)) : "Marked as available for anyone";
+        return '<div class="day-slot-item">' +
+          '<div class="day-slot-main"><strong>' + esc(a.start) + "–" + esc(a.end) + "</strong>" +
+          "<span>" + esc(who) + "</span></div>" +
+          '<div class="day-slot-actions">' +
+            '<button class="btn danger small" data-tb-avail-remove="' + a.id + '">Remove</button>' +
+          "</div>" +
+        "</div>";
+      }).join("") : '<p class="empty">No availability marked for this date.</p>';
+    }
+
+    function wireAvailRemoveButtons() {
+      Array.prototype.forEach.call(document.querySelectorAll("[data-tb-avail-remove]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var id = btn.getAttribute("data-tb-avail-remove");
+          getStore().then(function (s) { return s.deleteAvailability(id); })
+            .then(loadTutorCalendarData)
+            .then(function () { drawTutorCalendar(); renderTutorDateModal(iso); });
+        });
+      });
+    }
+
+    openModal(
+      "<h2>" + esc(formatDateLabel(iso)) + "</h2>" +
+      "<h3 style=\"margin-top:0;font-size:0.95rem\">Lessons</h3>" +
+      '<div class="day-slot-list" id="tutorDayLessons">' + lessonsHtml + "</div>" +
+      "<h3 style=\"margin-top:20px;font-size:0.95rem\">Your availability</h3>" +
+      '<p style="color:var(--muted);font-size:0.85rem;margin-top:-8px">A note for planning — marking a time available doesn\'t book or notify anyone. Add as many slots as you like for this date, open to anyone or reserved for one family.</p>' +
+      '<div class="day-slot-list" id="tutorDayAvail">' + renderAvailHtml() + "</div>" +
+      '<label for="availStudent">Reserve for (optional)</label>' +
+      '<select id="availStudent"><option value="">Anyone — open slot</option></select>' +
+      '<div class="field-row">' +
+        '<div><label for="availStart">Start time</label><input type="time" id="availStart" value="16:00"></div>' +
+        '<div><label for="availEnd">End time</label><input type="time" id="availEnd" value="17:00"></div>' +
+      "</div>" +
+      '<button class="btn" id="availAdd" style="margin-top:16px;width:100%">Add availability</button>' +
+      '<div class="msg" id="availMsg"></div>'
+    );
+
+    wireAvailRemoveButtons();
+
+    loadStudentsCache().then(function (families) {
+      var sel = document.getElementById("availStudent");
+      if (sel) {
+        sel.innerHTML = '<option value="">Anyone — open slot</option>' + families.map(function (f) {
+          return '<option value="' + esc(f.email) + '">' + esc(f.childName) + " (" + esc(f.name) + ")</option>";
+        }).join("");
+      }
+      // Re-render the availability list now that studentLabelByEmail has family names to work with.
+      var availList = document.getElementById("tutorDayAvail");
+      if (availList) {
+        availList.innerHTML = renderAvailHtml();
+        wireAvailRemoveButtons();
+      }
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll("[data-tb-complete-id]"), function (cb) {
+      cb.addEventListener("change", function () {
+        var id = cb.getAttribute("data-tb-complete-id");
+        getStore().then(function (s) { return s.updateBooking(id, { completed: cb.checked }); })
+          .then(loadTutorCalendarData)
+          .then(function () { drawTutorCalendar(); renderTutorDateModal(iso); });
+      });
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll("[data-tb-cancel-id]"), function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-tb-cancel-id");
+        getStore().then(function (s) { return s.deleteBooking(id); })
+          .then(loadTutorCalendarData)
+          .then(function () { drawTutorCalendar(); renderTutorDateModal(iso); });
+      });
+    });
+
+    document.getElementById("availAdd").addEventListener("click", function () {
+      var start = document.getElementById("availStart").value;
+      var end = document.getElementById("availEnd").value;
+      var studentEmail = document.getElementById("availStudent").value;
+      var msg = document.getElementById("availMsg");
+      msg.textContent = ""; msg.className = "msg";
+      if (!start || !end || start >= end) { msg.textContent = "Check the start and end time."; msg.className = "msg error"; return; }
+      getStore().then(function (s) {
+        if (!s) { msg.textContent = "Storage unavailable right now."; msg.className = "msg error"; return; }
+        var data = { tutorEmail: state.user.email, date: iso, start: start, end: end };
+        if (studentEmail) data.studentEmail = studentEmail;
+        return s.addAvailability(data);
+      }).then(function () { return loadTutorCalendarData(); }).then(function () {
+        drawTutorCalendar();
+        renderTutorDateModal(iso);
+      }).catch(function () { msg.textContent = "Couldn’t save — check your access."; msg.className = "msg error"; });
+    });
+  }
+
+  // ---------- REQUESTS (recurring lesson scheduling, or a one-off session) ----------
+  function acceptRequest(req) {
+    return getStore().then(function (s) {
+      var dates = req.kind === "oneoff" ? [req.firstDate] : weeklyDates(req.firstDate, 4);
+      return Promise.all(dates.map(function (d) {
+        return s.addBooking({
+          requestId: req.id, tutorEmail: req.tutorEmail, parentEmail: req.parentEmail,
+          childName: req.childName, cohort: req.cohort, date: d, start: req.start, end: req.end,
+          completed: false, createdAt: new Date().toISOString()
+        });
+      })).then(function () {
+        return s.updateRequest(req.id, { status: "accepted", respondedAt: new Date().toISOString() });
+      });
+    });
+  }
+
+  function declineRequest(req) {
+    return getStore().then(function (s) { return s.updateRequest(req.id, { status: "declined", respondedAt: new Date().toISOString() }); });
+  }
+
+  function withdrawRequest(req) {
+    return getStore().then(function (s) { return s.updateRequest(req.id, { status: "withdrawn", respondedAt: new Date().toISOString() }); });
+  }
+
+  // Accepted RECURRING requests whose 4-week block has ended or ends within the next 7 days,
+  // and that haven't already been renewed with a fresh pending/accepted request. One-off
+  // sessions are never renewal candidates — there's nothing left to renew after the one lesson.
+  function getRenewalCandidates(allRequests, allBookings, myEmail, roleField) {
+    var accepted = allRequests.filter(function (r) { return r.status === "accepted" && r.kind !== "oneoff" && r[roleField] === myEmail; });
+    var soonCutoff = addDaysIso(todayIso(), 7);
+    var out = [];
+    accepted.forEach(function (r) {
+      var mine = allBookings.filter(function (b) { return b.requestId === r.id; });
+      if (!mine.length) return;
+      var lastDate = mine.map(function (b) { return b.date; }).sort().slice(-1)[0];
+      if (lastDate > soonCutoff) return;
+      var nextFirst = addDaysIso(lastDate, 7);
+      var alreadyRenewed = allRequests.some(function (r2) {
+        return r2.tutorEmail === r.tutorEmail && r2.parentEmail === r.parentEmail &&
+          r2.start === r.start && r2.end === r.end && r2.firstDate === nextFirst &&
+          r2.status !== "declined" && r2.status !== "withdrawn";
+      });
+      if (alreadyRenewed) return;
+      out.push({ request: r, lastDate: lastDate, nextFirst: nextFirst });
+    });
+    return out;
+  }
+
+  function requestStatusLabel(status) {
+    return status === "pending" ? "Awaiting response" : (status === "accepted" ? "Accepted" : (status === "declined" ? "Declined" : "Withdrawn"));
+  }
+
+  // Plain (un-escaped) description of what a request is asking for — callers esc() it themselves.
+  function requestScheduleText(r) {
+    return r.kind === "oneoff"
+      ? "One-off session on " + formatDateLabel(r.firstDate) + ", " + r.start + "–" + r.end
+      : "Every " + weekdayName(r.firstDate) + ", " + r.start + "–" + r.end + " · starting " + formatDateLabel(r.firstDate);
+  }
+
+  function renderTutorRequests(composeKind) {
+    composeKind = composeKind === "oneoff" ? "oneoff" : "recurring";
+    var el = document.getElementById("tutorRequests");
+    if (!el) return;
+    el.innerHTML = '<p class="empty">Loading…</p>';
+    Promise.all([
+      getStore().then(function (s) { return s ? s.listRequests() : []; }),
+      getStore().then(function (s) { return s ? s.listBookings() : []; }),
+      getStore().then(function (s) { return s ? s.listUsers() : []; })
+    ]).then(function (res) {
+      var allRequests = res[0], allBookings = res[1], allUsers = res[2];
+      var families = allUsers.filter(function (u) { return u.role === "parent"; })
+        .sort(function (a, b) { return (a.childName || "").localeCompare(b.childName || ""); });
+      tutorStudentsCache = families;
+
+      var incoming = allRequests.filter(function (r) { return r.tutorEmail === state.user.email && r.direction === "parent-to-tutor" && r.status === "pending"; });
+      var sent = allRequests.filter(function (r) { return r.tutorEmail === state.user.email && r.direction === "tutor-to-parent"; })
+        .sort(function (a, b) { return (b.createdAt || "").localeCompare(a.createdAt || ""); });
+      var renewals = getRenewalCandidates(allRequests, allBookings, state.user.email, "tutorEmail");
+
+      var renewalsHtml = renewals.map(function (x) {
+        return '<div class="day-slot-item"><div class="day-slot-main"><strong>' + esc(x.request.childName) + "</strong>" +
+          '<span>Every ' + esc(weekdayName(x.request.firstDate)) + ", " + esc(x.request.start) + "–" + esc(x.request.end) + " · ends " + esc(formatDateLabel(x.lastDate)) + "</span></div>" +
+          '<div class="day-slot-actions"><button class="btn small" data-renew-req="' + x.request.id + '">Send renewal request</button></div></div>';
+      }).join("");
+
+      var incomingHtml = incoming.length ? incoming.map(function (r) {
+        return '<div class="day-slot-item"><div class="day-slot-main"><strong>' + esc(r.childName) + " (" + esc(cohortLabel(r.cohort)) + ")</strong>" +
+          '<span>' + esc(requestScheduleText(r)) + "</span></div>" +
+          '<div class="day-slot-actions">' +
+            '<button class="btn small" data-accept-req="' + r.id + '">Accept</button>' +
+            '<button class="btn danger small" data-decline-req="' + r.id + '">Decline</button>' +
+          "</div></div>";
+      }).join("") : '<p class="empty">No incoming requests right now.</p>';
+
+      var sentHtml = sent.length ? sent.map(function (r) {
+        var withdrawBtn = r.status === "pending" ? '<button class="btn danger small" data-withdraw-req="' + r.id + '">Withdraw</button>' : "";
+        return '<div class="day-slot-item"><div class="day-slot-main"><strong>' + esc(r.childName) + "</strong>" +
+          '<span>' + esc(requestScheduleText(r)) + " · " + requestStatusLabel(r.status) + "</span></div>" +
+          '<div class="day-slot-actions">' + withdrawBtn + "</div></div>";
+      }).join("") : '<p class="empty">You haven’t sent any requests yet.</p>';
+
+      var dateLabel = composeKind === "oneoff" ? "Session date" : "First lesson date";
+
+      el.innerHTML =
+        (renewals.length ? ('<h4 style="font-size:0.9rem;margin:0 0 8px">Ending soon</h4><div class="day-slot-list">' + renewalsHtml + "</div>") : "") +
+        '<h4 style="font-size:0.9rem;margin:16px 0 8px">Incoming requests</h4>' +
+        '<div class="day-slot-list">' + incomingHtml + "</div>" +
+        '<h4 style="font-size:0.9rem;margin:20px 0 8px">Send a new request</h4>' +
+        '<p style="color:var(--muted);font-size:0.85rem;margin-top:-6px">Need to cover a missed lesson or add an extra session this week? Use "One-off session" for a single date instead of a 4-week block.</p>' +
+        '<div class="cat-tabs" style="margin-bottom:2px">' +
+          '<button type="button" class="tab-btn small" data-reqkind="recurring" aria-selected="' + (composeKind === "recurring") + '">Recurring (4 weeks)</button>' +
+          '<button type="button" class="tab-btn small" data-reqkind="oneoff" aria-selected="' + (composeKind === "oneoff") + '">One-off session</button>' +
+        "</div>" +
+        '<label for="reqFamily">Family</label>' +
+        '<select id="reqFamily">' + (families.length ? families.map(function (f) {
+          return '<option value="' + esc(f.email) + '">' + esc(f.childName) + " (" + esc(f.name) + ") · " + esc(cohortLabel(f.cohort)) + "</option>";
+        }).join("") : '<option value="">No student logins yet</option>') + "</select>" +
+        '<label for="reqFirstDate">' + dateLabel + "</label>" +
+        '<input type="date" id="reqFirstDate">' +
+        '<div class="field-row">' +
+          '<div><label for="reqStart">Start time</label><input type="time" id="reqStart" value="16:00"></div>' +
+          '<div><label for="reqEnd">End time</label><input type="time" id="reqEnd" value="17:00"></div>' +
+        "</div>" +
+        '<button class="btn" id="reqSend" style="margin-top:16px;width:100%">Send request</button>' +
+        '<div class="msg" id="reqMsg"></div>' +
+        '<h4 style="font-size:0.9rem;margin:20px 0 8px">Your sent requests</h4>' +
+        '<div class="day-slot-list">' + sentHtml + "</div>";
+
+      Array.prototype.forEach.call(el.querySelectorAll("[data-reqkind]"), function (btn) {
+        btn.addEventListener("click", function () { renderTutorRequests(btn.getAttribute("data-reqkind")); });
+      });
+      Array.prototype.forEach.call(el.querySelectorAll("[data-accept-req]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var r = allRequests.filter(function (x) { return x.id === btn.getAttribute("data-accept-req"); })[0];
+          if (!r) return;
+          acceptRequest(r).then(function () { renderTutorRequests(composeKind); loadTutorCalendarData().then(drawTutorCalendar); });
+        });
+      });
+      Array.prototype.forEach.call(el.querySelectorAll("[data-decline-req]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var r = allRequests.filter(function (x) { return x.id === btn.getAttribute("data-decline-req"); })[0];
+          if (!r) return;
+          declineRequest(r).then(function () { renderTutorRequests(composeKind); });
+        });
+      });
+      Array.prototype.forEach.call(el.querySelectorAll("[data-withdraw-req]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var r = allRequests.filter(function (x) { return x.id === btn.getAttribute("data-withdraw-req"); })[0];
+          if (!r) return;
+          withdrawRequest(r).then(function () { renderTutorRequests(composeKind); });
+        });
+      });
+      Array.prototype.forEach.call(el.querySelectorAll("[data-renew-req]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var x = renewals.filter(function (y) { return y.request.id === btn.getAttribute("data-renew-req"); })[0];
+          if (!x) return;
+          var r = x.request;
+          getStore().then(function (s) {
+            return s.addRequest({
+              direction: "tutor-to-parent", tutorEmail: r.tutorEmail, parentEmail: r.parentEmail,
+              childName: r.childName, cohort: r.cohort, kind: "recurring", firstDate: x.nextFirst, start: r.start, end: r.end,
+              status: "pending", createdAt: new Date().toISOString(), renewalOf: r.id
+            });
+          }).then(function () { renderTutorRequests(composeKind); });
+        });
+      });
+
+      document.getElementById("reqSend").addEventListener("click", function () {
+        var msg = document.getElementById("reqMsg");
+        msg.textContent = ""; msg.className = "msg";
+        var parentEmail = document.getElementById("reqFamily").value;
+        var firstDate = document.getElementById("reqFirstDate").value;
+        var start = document.getElementById("reqStart").value;
+        var end = document.getElementById("reqEnd").value;
+        if (!parentEmail) { msg.textContent = "Pick a family first."; msg.className = "msg error"; return; }
+        if (!firstDate) { msg.textContent = "Pick a date."; msg.className = "msg error"; return; }
+        if (!start || !end || start >= end) { msg.textContent = "Check the start and end time."; msg.className = "msg error"; return; }
+        var family = families.filter(function (f) { return f.email === parentEmail; })[0];
+        if (!family) { msg.textContent = "That family login couldn’t be found."; msg.className = "msg error"; return; }
+        getStore().then(function (s) {
+          if (!s) { msg.textContent = "Storage unavailable right now."; msg.className = "msg error"; return; }
+          return s.addRequest({
+            direction: "tutor-to-parent", tutorEmail: state.user.email, parentEmail: parentEmail,
+            childName: family.childName, cohort: family.cohort, kind: composeKind, firstDate: firstDate, start: start, end: end,
+            status: "pending", createdAt: new Date().toISOString()
+          });
+        }).then(function () { renderTutorRequests(composeKind); }).catch(function () { msg.textContent = "Couldn’t send — check your access."; msg.className = "msg error"; });
+      });
+    }).catch(function () { el.innerHTML = '<p class="empty">Couldn’t load requests.</p>'; });
+  }
+
+  // ---------- VIEW TUTORS (founder only) ----------
+  var viewTutorsList = [], viewTutorEmail = null, viewTutorBookings = [], viewTutorCalYear, viewTutorCalMonth;
+
+  function hoursBetween(start, end) {
+    var s = start.split(":").map(Number), e = end.split(":").map(Number);
+    return Math.max(0, ((e[0] * 60 + e[1]) - (s[0] * 60 + s[1])) / 60);
+  }
+
+  function sumCompletedHoursForMonth(avail, year, month) {
+    var monthPrefix = year + "-" + pad2(month + 1) + "-";
+    return avail.filter(function (a) { return a.completed && a.date && a.date.indexOf(monthPrefix) === 0; })
+      .reduce(function (sum, a) { return sum + hoursBetween(a.start, a.end); }, 0);
+  }
+
+  function openViewTutorsModal() {
+    openModal("<h2>View tutors</h2><p class=\"empty\">Loading tutors…</p>", { wide: true });
+    getStore().then(function (s) { return s ? s.listUsers() : []; }).then(function (all) {
+      viewTutorsList = all.filter(function (u) { return u.role === "tutor"; })
+        .sort(function (a, b) { return (a.name || "").localeCompare(b.name || ""); });
+      renderViewTutorsPicker();
+    });
+  }
+
+  function renderViewTutorsPicker() {
+    var pickerHtml = '<div class="tutor-picker">' +
+      viewTutorsList.map(function (t) {
+        return '<button type="button" class="tutor-pick-btn" data-view-tutor="' + esc(t.email) + '" aria-selected="' + (t.email === viewTutorEmail) + '">' +
+          '<span class="tutor-pick-avatar">' + (t.photoDataUrl ? '<img src="' + t.photoDataUrl + '" alt="">' : esc((t.name || "?")[0])) + "</span>" +
+          esc(t.name) +
+        "</button>";
+      }).join("") +
+    "</div>";
+
+    openModal(
+      "<h2>View tutors</h2>" +
+      (viewTutorsList.length ? pickerHtml : '<p class="empty">No tutor accounts yet.</p>') +
+      '<div id="viewTutorBody"></div>',
+      { wide: true }
+    );
+    wireTutorPicker();
+    if (viewTutorEmail) loadAndRenderViewTutorCalendar();
+  }
+
+  function wireTutorPicker() {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-view-tutor]"), function (btn) {
+      btn.addEventListener("click", function () {
+        viewTutorEmail = btn.getAttribute("data-view-tutor");
+        var now = new Date();
+        viewTutorCalYear = now.getFullYear();
+        viewTutorCalMonth = now.getMonth();
+        renderViewTutorsPicker();
+      });
+    });
+  }
+
+  function fetchViewTutorData() {
+    return getStore().then(function (s) { return s ? s.listBookings() : []; }).then(function (all) {
+      viewTutorBookings = all.filter(function (b) { return b.tutorEmail === viewTutorEmail; });
+    });
+  }
+
+  function loadAndRenderViewTutorCalendar() {
+    var body = document.getElementById("viewTutorBody");
+    if (body) body.innerHTML = '<p class="empty">Loading…</p>';
+    return fetchViewTutorData().then(renderViewTutorCalendarBody);
+  }
+
+  function renderViewTutorCalendarBody() {
+    var body = document.getElementById("viewTutorBody");
+    if (!body) return;
+    var monthPrefix = viewTutorCalYear + "-" + pad2(viewTutorCalMonth + 1);
+    var monthLabel = MONTH_NAMES[viewTutorCalMonth] + " " + viewTutorCalYear;
+    var completedThisMonth = viewTutorBookings.filter(function (b) {
+      return b.completed && b.date && b.date.indexOf(monthPrefix + "-") === 0;
+    });
+    var totalHours = sumCompletedHoursForMonth(viewTutorBookings, viewTutorCalYear, viewTutorCalMonth);
+    var studentEmails = {};
+    completedThisMonth.forEach(function (b) { studentEmails[b.parentEmail] = true; });
+    var studentCount = Object.keys(studentEmails).length;
+    var tutor = viewTutorsList.filter(function (t) { return t.email === viewTutorEmail; })[0] || {};
+
+    body.innerHTML =
+      '<div class="credential-box">Login: <strong>' + esc(tutor.email || viewTutorEmail) + "</strong></div>" +
+      '<div class="cal-with-sidebar">' +
+        '<div id="viewTutorCal" class="cal-main"></div>' +
+        '<div class="cal-sidebar">' +
+          '<div class="stat-tile"><strong>' + totalHours.toFixed(1) + "</strong><span>Hours completed in " + esc(MONTH_NAMES[viewTutorCalMonth]) + "</span></div>" +
+          '<div class="stat-tile"><strong>' + studentCount + "</strong><span>Students tutored in " + esc(MONTH_NAMES[viewTutorCalMonth]) + "</span></div>" +
+        "</div>" +
+      "</div>" +
+      '<p style="color:var(--muted);font-size:0.9rem">Showing <strong>' + esc(monthLabel) + '</strong> — the totals at the side update as you move between months. Click a date to see who was tutored and whether the lesson was marked complete.</p>';
+
+    renderMonthGrid("viewTutorCal", viewTutorCalYear, viewTutorCalMonth, function (iso) {
+      var n = viewTutorBookings.filter(function (b) { return b.date === iso; }).length;
+      if (!n) return null;
+      var anyCompleted = viewTutorBookings.some(function (b) { return b.date === iso && b.completed; });
+      return { badge: String(n), extraClass: anyCompleted ? "has-available" : "has-slots" };
+    }, function (iso) {
+      renderViewTutorDateDetail(iso);
+    }, function (y, m) {
+      viewTutorCalYear = y; viewTutorCalMonth = m;
+      renderViewTutorCalendarBody();
+    });
+  }
+
+  function renderViewTutorDateDetail(iso) {
+    var tutor = viewTutorsList.filter(function (t) { return t.email === viewTutorEmail; })[0] || {};
+    var lessons = viewTutorBookings.filter(function (b) { return b.date === iso; }).sort(function (a, b) { return a.start.localeCompare(b.start); });
+    var listHtml = lessons.length ? lessons.map(function (b) {
+      return '<div class="day-slot-item' + (b.completed ? " completed" : "") + '">' +
+        '<div class="day-slot-main"><strong>' + esc(b.start) + "–" + esc(b.end) + "</strong>" +
+        '<span>' + esc(b.childName) + "</span></div>" +
+        '<div class="day-slot-actions">' +
+          '<label class="slot-complete"><input type="checkbox" data-audit-complete-id="' + b.id + '"' + (b.completed ? " checked" : "") + '> Completed</label>' +
+        "</div>" +
+      "</div>";
+    }).join("") : '<p class="empty">No lessons booked for this date.</p>';
+
+    openModal(
+      '<button type="button" class="back-link" id="backToViewTutorCal">&lsaquo; Back to calendar</button>' +
+      "<h2>" + esc(tutor.name || "Tutor") + " — " + esc(formatDateLabel(iso)) + "</h2>" +
+      '<div class="day-slot-list">' + listHtml + "</div>",
+      { wide: true }
+    );
+
+    document.getElementById("backToViewTutorCal").addEventListener("click", function () {
+      renderViewTutorsPicker();
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-audit-complete-id]"), function (cb) {
+      cb.addEventListener("change", function () {
+        var id = cb.getAttribute("data-audit-complete-id");
+        getStore().then(function (s) { return s.updateBooking(id, { completed: cb.checked }); })
+          .then(fetchViewTutorData)
+          .then(function () { renderViewTutorDateDetail(iso); });
+      });
+    });
+  }
+
+  // A resource with no board/yearGroup recorded (any manual upload made before this existed)
+  // is treated as common to every board/year, so nothing already uploaded disappears.
+  function resourceMatchesBoard(r, board) {
+    if (!r.board || r.board === "combined" || board === "combined") return true;
+    return r.board === board;
+  }
+  function resourceMatchesYear(r, year) {
+    if (!r.yearGroup || !year) return true;
+    return r.yearGroup === year;
+  }
+
+  function renderResourceTabs(activeBoard, activeCat, activeSub, activeYear) {
+    activeBoard = activeBoard || "combined";
+    activeCat = activeCat || RES_CATEGORIES[0];
+    var hasSub = RES_CATEGORIES_WITH_SUBJECTS.indexOf(activeCat) !== -1;
+    activeSub = hasSub ? (activeSub || RES_SUBJECTS[0]) : null;
+    activeYear = hasSub ? (activeYear || RES_YEARGROUPS[0].id) : null;
+
+    var boardTabsEl = document.getElementById("resBoardTabs");
+    boardTabsEl.innerHTML = BOARDS.map(function (b) {
+      return '<button class="tab-btn" data-board="' + esc(b.id) + '" aria-selected="' + (b.id === activeBoard) + '">' + esc(b.label) + "</button>";
+    }).join("");
+    Array.prototype.forEach.call(boardTabsEl.querySelectorAll("[data-board]"), function (btn) {
+      btn.addEventListener("click", function () { renderResourceTabs(btn.getAttribute("data-board"), activeCat, activeSub, activeYear); });
+    });
+
+    var tabsEl = document.getElementById("resTabs");
+    tabsEl.innerHTML = RES_CATEGORIES.map(function (c) {
+      return '<button class="tab-btn" data-cat="' + esc(c) + '" aria-selected="' + (c === activeCat) + '">' + esc(c) + "</button>";
+    }).join("");
+    Array.prototype.forEach.call(tabsEl.querySelectorAll("[data-cat]"), function (btn) {
+      btn.addEventListener("click", function () { renderResourceTabs(activeBoard, btn.getAttribute("data-cat"), null, null); });
+    });
+
+    var subTabsEl = document.getElementById("resSubTabs");
+    var yearTabsEl = document.getElementById("resYearTabs");
+    if (hasSub) {
+      subTabsEl.style.display = "";
+      subTabsEl.innerHTML = RES_SUBJECTS.map(function (s) {
+        return '<button class="tab-btn small" data-sub="' + esc(s) + '" aria-selected="' + (s === activeSub) + '">' + esc(s) + "</button>";
+      }).join("");
+      Array.prototype.forEach.call(subTabsEl.querySelectorAll("[data-sub]"), function (btn) {
+        btn.addEventListener("click", function () { renderResourceTabs(activeBoard, activeCat, btn.getAttribute("data-sub"), activeYear); });
+      });
+      yearTabsEl.style.display = "";
+      yearTabsEl.innerHTML = RES_YEARGROUPS.map(function (y) {
+        return '<button class="tab-btn small" data-year="' + esc(y.id) + '" aria-selected="' + (y.id === activeYear) + '">' + esc(y.label) + "</button>";
+      }).join("");
+      Array.prototype.forEach.call(yearTabsEl.querySelectorAll("[data-year]"), function (btn) {
+        btn.addEventListener("click", function () { renderResourceTabs(activeBoard, activeCat, activeSub, btn.getAttribute("data-year")); });
+      });
+    } else {
+      subTabsEl.style.display = "none";
+      subTabsEl.innerHTML = "";
+      yearTabsEl.style.display = "none";
+      yearTabsEl.innerHTML = "";
+    }
+
+    var uploadArea = document.getElementById("resUploadArea");
+    var uploadLabel = hasSub ? (activeCat + " — " + activeSub + " — " + cohortLabel(activeYear)) : activeCat;
+    if (state.user && state.user.isFounder) {
+      uploadArea.innerHTML =
+        '<label for="resTitle">Title</label>' +
+        '<input type="text" id="resTitle" placeholder="e.g. VR practice set 3 — answers">' +
+        (hasSub ? ('<label for="resBoard">Board</label>' +
+          '<select id="resBoard">' + BOARDS.map(function (b) { return '<option value="' + b.id + '">' + b.label + "</option>"; }).join("") + "</select>") : "") +
+        '<label for="resFile">File</label>' +
+        '<input type="file" id="resFile">' +
+        '<button class="btn small" id="resUpload" style="margin-top:12px">Upload to ' + esc(uploadLabel) + "</button>" +
+        '<div class="msg" id="resMsg"></div>';
+      var boardSelectForUpload = document.getElementById("resBoard");
+      if (boardSelectForUpload) boardSelectForUpload.value = activeBoard === "combined" ? "combined" : activeBoard;
+
+      document.getElementById("resUpload").addEventListener("click", function () {
+        var title = document.getElementById("resTitle").value.trim();
+        var fileInput = document.getElementById("resFile");
+        var msg = document.getElementById("resMsg");
+        var uploadBoard = boardSelectForUpload ? boardSelectForUpload.value : null;
+        msg.textContent = ""; msg.className = "msg";
+        if (!title) { msg.textContent = "Give it a title."; msg.className = "msg error"; return; }
+        if (!fileInput.files || !fileInput.files[0]) { msg.textContent = "Choose a file."; msg.className = "msg error"; return; }
+        var formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        formData.append("title", title);
+        formData.append("category", activeCat);
+        if (activeSub) formData.append("subject", activeSub);
+        if (hasSub && uploadBoard) formData.append("board", uploadBoard);
+        if (hasSub) formData.append("yearGroup", activeYear);
+        getStore().then(function (s) { return s.addResource(formData); })
+          .then(function () { msg.textContent = "Uploaded."; msg.className = "msg ok"; loadResourceList(activeBoard, activeCat, activeSub, activeYear); })
+          .catch(function (err) { msg.textContent = err.message || "Upload failed — check your access."; msg.className = "msg error"; });
+      });
+    } else {
+      uploadArea.innerHTML = '<p class="empty">Only Timothy and David can add resources here. You can view and download everything below.</p>';
+    }
+
+    loadResourceList(activeBoard, activeCat, activeSub, activeYear);
+  }
+
+  function loadResourceList(board, cat, sub, year) {
+    var listEl = document.getElementById("resList");
+    if (!listEl) return;
+    listEl.innerHTML = '<p class="empty">Loading…</p>';
+    getStore().then(function (s) { return s ? s.listResources() : []; }).then(function (all) {
+      var mine = all.filter(function (r) {
+        return r.category === cat && (sub ? r.subject === sub : !r.subject) &&
+          resourceMatchesBoard(r, board) && resourceMatchesYear(r, year);
+      });
+      mine.sort(function (a, b) { return (a.title || "").localeCompare(b.title || "", undefined, { numeric: true }); });
+      if (!mine.length) { listEl.innerHTML = '<p class="empty">Nothing here yet.</p>'; return; }
+      listEl.innerHTML = mine.map(function (r, i) {
+        return '<div class="res-item"><div>' + esc(r.title) +
+          '<div class="res-meta" id="resMeta' + i + '">Added by ' + esc(r.uploadedBy || "a tutor") + "</div></div>" +
+          '<div style="display:flex;align-items:center;gap:8px">' +
+            '<div class="actions-menu"><button class="btn secondary small actions-btn" type="button">Actions ▾</button>' +
+              '<div class="actions-dropdown">' +
+                '<button class="menu-item" type="button" data-res-open="' + i + '">View</button>' +
+                '<button class="menu-item" type="button" data-res-save="' + i + '">Save</button>' +
+              "</div>" +
+            "</div>" +
+            (state.user && state.user.isFounder ? '<button class="btn danger small" data-rid="' + r.id + '">Remove</button>' : "") +
+          "</div>" +
+          "</div>";
+      }).join("");
+      wireActionsMenus(listEl);
+      Array.prototype.forEach.call(listEl.querySelectorAll("[data-res-open]"), function (btn) {
+        var idx = Number(btn.getAttribute("data-res-open"));
+        btn.addEventListener("click", function () { closeAllActionsMenus(); openResourceFile(mine[idx], "resMeta" + idx); });
+      });
+      Array.prototype.forEach.call(listEl.querySelectorAll("[data-res-save]"), function (btn) {
+        var idx = Number(btn.getAttribute("data-res-save"));
+        btn.addEventListener("click", function () { closeAllActionsMenus(); downloadResourceFile(mine[idx], "resMeta" + idx); });
+      });
+      Array.prototype.forEach.call(listEl.querySelectorAll("[data-rid]"), function (btn) {
+        btn.addEventListener("click", function () {
+          getStore().then(function (s) { return s.deleteResource(btn.getAttribute("data-rid")); }).then(function () { loadResourceList(board, cat, sub, year); });
+        });
+      });
+    }).catch(function () { listEl.innerHTML = '<p class="empty">Couldn’t load resources.</p>'; });
+  }
+
+  // ---------- SYLLABUS (tutor portal only — static files published alongside this page) ----------
+  // Claude's artifact sandbox blocks plain <a href> navigation/new-tab opens to files served
+  // from inside the page, so each file gets an Actions menu instead (same pattern as the
+  // student/tutor "Remove" menus below): Open previews the PDF in a modal via a blob: URL
+  // (no top-level navigation involved), Save goes through the sanctioned "downloads" capability.
+  function renderSyllabusList() {
+    var listEl = document.getElementById("sylList");
+    if (!listEl) return;
+    listEl.innerHTML = SYLLABUS_FILES.map(function (f, i) {
+      return '<div class="res-item"><div>' + esc(f.title) +
+          '<div class="res-meta" id="sylMeta' + i + '">PDF</div>' +
+        "</div>" +
+        '<div class="actions-menu"><button class="btn secondary small actions-btn" type="button">Actions ▾</button>' +
+          '<div class="actions-dropdown">' +
+            '<button class="menu-item" type="button" data-syl-open="' + i + '">Open</button>' +
+            '<button class="menu-item" type="button" data-syl-save="' + i + '">Save</button>' +
+          "</div>" +
+        "</div></div>";
+    }).join("");
+    wireActionsMenus(listEl);
+    Array.prototype.forEach.call(listEl.querySelectorAll("[data-syl-open]"), function (btn) {
+      btn.addEventListener("click", function () { closeAllActionsMenus(); openSyllabusFile(Number(btn.getAttribute("data-syl-open"))); });
+    });
+    Array.prototype.forEach.call(listEl.querySelectorAll("[data-syl-save]"), function (btn) {
+      btn.addEventListener("click", function () { closeAllActionsMenus(); downloadSyllabusFile(Number(btn.getAttribute("data-syl-save"))); });
+    });
+  }
+
+  // A plain fetch() for a file's bytes, with the session token attached — static worksheet/
+  // syllabus PDFs don't need it, but a resource uploaded after launch is served from
+  // /api/resources/file/:id, which does require it, and the header is harmless either way.
+  function fetchBinary(href) {
+    var headers = {};
+    if (state.sessionToken) headers["Authorization"] = "Bearer " + state.sessionToken;
+    return fetch(href, { headers: headers }).then(function (res) {
+      if (!res.ok) throw new Error("fetch failed");
+      return res.blob();
+    });
+  }
+
+  function fetchSyllabusBlob(i) {
+    return fetchBinary(SYLLABUS_FILES[i].href);
+  }
+
+  function openSyllabusFile(i) {
+    var f = SYLLABUS_FILES[i];
+    var meta = document.getElementById("sylMeta" + i);
+    if (meta) meta.textContent = "Opening…";
+    fetchSyllabusBlob(i).then(function (blob) {
+      var blobUrl = URL.createObjectURL(blob);
+      openModal(
+        "<h3>" + esc(f.title) + "</h3>" +
+        '<iframe src="' + blobUrl + '" title="' + esc(f.title) + '" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;margin-top:10px"></iframe>',
+        { wide: true }
+      );
+      if (meta) meta.textContent = "PDF";
+    }).catch(function () {
+      if (meta) meta.textContent = "Couldn’t open that file here — try Save instead.";
+    });
+  }
+
+  // Plain browser download — no "downloads" capability here, just a throwaway blob URL
+  // and a temporary <a download> click, which every real browser handles as a save.
+  function triggerBrowserDownload(blob, filename) {
+    var blobUrl = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 4000);
+  }
+
+  function downloadSyllabusFile(i) {
+    var f = SYLLABUS_FILES[i];
+    var meta = document.getElementById("sylMeta" + i);
+    if (meta) meta.textContent = "Preparing…";
+    fetchSyllabusBlob(i).then(function (blob) {
+      triggerBrowserDownload(blob, f.href.split("/").pop());
+      if (meta) meta.textContent = "Saved.";
+    }).catch(function () {
+      if (meta) meta.textContent = "Couldn’t load that file to save it — try again.";
+    });
+  }
+
+  // Kind -> display label, and a shared blob-preview/download pair, reused by the Resources
+  // list below for any resource whose url points at a PDF served alongside this page (our own
+  // generated worksheets) rather than an uploaded asset (which already has its own <a href>).
+  var WORKSHEET_DOC_LABELS = { lesson: "Lesson Worksheet", homework: "Homework Worksheet", markscheme: "Mark Scheme" };
+
+  function fetchFileBlob(href) {
+    return fetchBinary(href);
+  }
+
+  // Shared View/Save handlers for any resource-list item (tutor or parent). Same blob-preview +
+  // sanctioned-downloads pattern as the syllabus list above. `item` is {title, url}; `metaElId`
+  // is the id of that row's small status line, so we can flash "Opening…"/"Saved." next to it.
+  function openResourceFile(item, metaElId) {
+    var meta = document.getElementById(metaElId);
+    var original = meta ? meta.textContent : "";
+    if (meta) meta.textContent = "Opening…";
+    fetchFileBlob(item.url).then(function (blob) {
+      var blobUrl = URL.createObjectURL(blob);
+      openModal(
+        "<h3>" + esc(item.title) + "</h3>" +
+        '<iframe src="' + blobUrl + '" title="' + esc(item.title) + '" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;margin-top:10px"></iframe>',
+        { wide: true }
+      );
+      if (meta) meta.textContent = original;
+    }).catch(function () {
+      if (meta) meta.textContent = "Couldn’t open that file here — try Save instead.";
+    });
+  }
+
+  // Resource URLs come in two shapes (see resources collection): a path-style
+  // URL like "worksheets/Maths_Y4Pt2/M01_..._Worksheet.pdf" ends in a real
+  // filename, but a blob-style URL like "/_blob/04ebbf7347811289131a1157d3fa6dc1"
+  // is a bare asset id with no extension at all. Naming the download from the
+  // last URL segment left every blob-style resource (most of the library)
+  // with an extensionless filename, which the downloads capability always
+  // rejects as "This file type can’t be saved here." — nothing to do with
+  // the file itself. Building the filename from the resource's own title
+  // (always present, always a PDF) works for both URL shapes.
+  function resourceFilename(item) {
+    var base = (item.title || "worksheet").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
+    return base + ".pdf";
+  }
+
+  function downloadResourceFile(item, metaElId) {
+    var meta = document.getElementById(metaElId);
+    var original = meta ? meta.textContent : "";
+    if (meta) meta.textContent = "Preparing…";
+    fetchFileBlob(item.url).then(function (blob) {
+      triggerBrowserDownload(blob, resourceFilename(item));
+      if (meta) meta.textContent = "Saved.";
+      setTimeout(function () { if (meta && meta.textContent === "Saved.") meta.textContent = original; }, 1800);
+    }).catch(function () {
+      var errMsg = "Couldn’t load that file to save it — try again.";
+      if (meta) meta.textContent = errMsg;
+      setTimeout(function () { if (meta && meta.textContent === errMsg) meta.textContent = original; }, 2600);
+    });
+  }
+
+  // ---------- PARENT DASHBOARD ----------
+  var parentCalYear, parentCalMonth, parentBookingsCache = [], parentTutorsCache = [];
+
+  function renderParentDashboard() {
+    var u = state.user;
+    var now = new Date();
+    parentCalYear = now.getFullYear();
+    parentCalMonth = now.getMonth();
+    app.innerHTML =
+      capabilityBanner() +
+      '<div class="hello-row">' +
+        '<div class="avatar">' + esc((u.name || "?")[0]) + "</div>" +
+        "<div><h2><span style=\"color:var(--brand)\">Hello</span>, " + esc(u.name) + "!</h2><span class=\"student-badge\">" + esc(cohortLabel(u.cohort)) + " · " + esc(boardLabel(u.board)) + " · " + esc(u.childName) + "</span></div>" +
+      "</div>" +
+      '<div class="card">' +
+        "<h3>Your lessons calendar</h3>" +
+        '<p style="color:var(--muted);font-size:0.9rem">Click a date to see that lesson and join by Teams.</p>' +
+        '<div class="cal-with-sidebar">' +
+          '<div id="parentCal" class="cal-main"></div>' +
+          '<div class="cal-sidebar">' +
+            '<div class="stat-tile"><strong id="parentMonthHours">0.0</strong><span id="parentMonthHoursLabel">Hours completed this month</span></div>' +
+            '<div class="stat-tile"><strong id="parentNextLesson" style="font-size:0.95rem">—</strong><span>Next lesson</span></div>' +
+          "</div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="card">' +
+        "<h3>Requests</h3>" +
+        '<p style="color:var(--muted);font-size:0.9rem">Ask a specific tutor for a regular weekly slot, or respond to a request from one of our tutors.</p>' +
+        '<div id="parentRequests"></div>' +
+      "</div>" +
+      accordionCard("Your lessons", '<div id="myBookings"></div>') +
+      accordionCard("Resources",
+        '<p style="color:var(--muted);font-size:0.9rem">Mark schemes, lessons, homework and resource lists for ' + esc(u.childName || "your child") + ", matched automatically to " + esc(u.childName ? (u.childName + "’s") : "their") + ' year group and exam board. Pick a category, then (for Maths/English/VR/NVR) a subject.</p>' +
+        '<div class="cat-tabs" id="resBoardTabsP"></div>' +
+        '<div class="cat-tabs" id="resTabsP"></div>' +
+        '<div class="cat-tabs" id="resSubTabsP" style="margin-top:-6px"></div>' +
+        '<div class="cat-tabs" id="resYearTabsP" style="margin-top:-6px"></div>' +
+        '<div id="resListP" style="margin-top:12px"></div>'
+      ) +
+      accordionCard("Syllabus",
+        '<p style="color:var(--muted);font-size:0.9rem">The full week-by-week teaching syllabus — Kent, Bexley, and the combined Kent &amp; Bexley track — each covering Year 4, Year 4 Pt 2, and Year 5 Accelerated.</p>' +
+        '<div id="sylList"></div>'
+      ) +
+      accordionCard("Contact us",
+        '<p style="color:var(--muted);font-size:0.9rem">Pick a topic and we’ll open an email to us with your name and details already filled in.</p>' +
+        '<div class="preset-grid">' +
+          CONTACT_PRESETS.map(function (p) {
+            return '<a class="preset-btn" href="' + esc(mailtoHref(PASSFRAME_INBOX, p.subject, contactPresetBody(p, u))) + '">' + esc(p.label) + "</a>";
+          }).join("") +
+        "</div>"
+      );
+
+    renderParentRequests();
+    loadMyBookings();
+    loadParentCalendarData().then(drawParentCalendar);
+    renderParentResourceTabs("Mark schemes", null);
+    renderSyllabusList();
+  }
+
+  function loadParentCalendarData() {
+    return Promise.all([
+      getStore().then(function (s) { return s ? s.listBookings() : []; }),
+      getStore().then(function (s) { return s ? s.listUsers() : []; })
+    ]).then(function (res) {
+      parentBookingsCache = res[0].filter(function (b) { return b.parentEmail === state.user.email; });
+      parentTutorsCache = res[1].filter(function (u) { return u.role === "tutor"; });
+    });
+  }
+
+  function tutorByEmailForParent(email) {
+    return parentTutorsCache.filter(function (t) { return t.email === email; })[0];
+  }
+
+  function parentNextLessonLabel(bookings) {
+    var t = todayIso();
+    var upcoming = bookings.filter(function (b) { return b.date >= t; }).sort(function (a, b) { return a.date.localeCompare(b.date); });
+    if (!upcoming.length) return "No lessons scheduled";
+    var next = upcoming[0];
+    var days = Math.round((new Date(next.date + "T00:00:00") - new Date(t + "T00:00:00")) / 86400000);
+    var when = days === 0 ? "today" : days === 1 ? "tomorrow" : "in " + days + " days";
+    var tutor = tutorByEmailForParent(next.tutorEmail);
+    return "Lesson " + when + " with " + (tutor ? tutor.name : "your tutor");
+  }
+
+  function drawParentCalendar() {
+    var now = new Date();
+    renderMonthGrid("parentCal", parentCalYear, parentCalMonth, function (iso) {
+      var lessonsHere = parentBookingsCache.filter(function (b) { return b.date === iso; });
+      if (!lessonsHere.length) return null;
+      var anyCompleted = lessonsHere.some(function (b) { return b.completed; });
+      return { badge: String(lessonsHere.length), extraClass: anyCompleted ? "has-available" : "has-slots" };
+    }, function (iso) {
+      renderParentDateModal(iso);
+    }, function (y, m) {
+      parentCalYear = y; parentCalMonth = m;
+      drawParentCalendar();
+    });
+    var hoursEl = document.getElementById("parentMonthHours");
+    if (hoursEl) hoursEl.textContent = sumCompletedHoursForMonth(parentBookingsCache, parentCalYear, parentCalMonth).toFixed(1);
+    var hoursLabelEl = document.getElementById("parentMonthHoursLabel");
+    if (hoursLabelEl) {
+      var isCurrentCalMonth = (parentCalYear === now.getFullYear() && parentCalMonth === now.getMonth());
+      hoursLabelEl.textContent = isCurrentCalMonth ? "Hours completed this month" :
+        "Hours completed in " + MONTH_NAMES[parentCalMonth] + (parentCalYear !== now.getFullYear() ? " " + parentCalYear : "");
+    }
+    var nextEl = document.getElementById("parentNextLesson");
+    if (nextEl) nextEl.textContent = parentNextLessonLabel(parentBookingsCache);
+  }
+
+  function renderParentDateModal(iso) {
+    var lessons = parentBookingsCache.filter(function (b) { return b.date === iso; }).sort(function (a, b) { return a.start.localeCompare(b.start); });
+    var lessonsHtml = lessons.length ? lessons.map(function (b) {
+      var tutor = tutorByEmailForParent(b.tutorEmail);
+      var joinBtn = (tutor && tutor.teamsLink)
+        ? '<a class="btn secondary small" href="' + esc(tutor.teamsLink) + '" target="_blank" rel="noopener">Join Teams call</a>'
+        : "";
+      return '<div class="day-slot-item' + (b.completed ? " completed" : "") + '">' +
+        '<div class="day-slot-main"><strong>' + esc(b.start) + "–" + esc(b.end) + "</strong>" +
+        '<span>' + esc(tutor ? tutor.name : "Tutor") + "</span></div>" +
+        '<div class="day-slot-actions">' +
+          joinBtn +
+          '<button class="btn danger small" data-pb-cancel-id="' + b.id + '">Cancel this week</button>' +
+        "</div>" +
+      "</div>";
+    }).join("") : '<p class="empty">No lessons booked for this date.</p>';
+
+    openModal(
+      "<h2>" + esc(formatDateLabel(iso)) + "</h2>" +
+      '<div class="day-slot-list" id="parentDayLessons">' + lessonsHtml + "</div>"
+    );
+
+    Array.prototype.forEach.call(document.querySelectorAll("[data-pb-cancel-id]"), function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-pb-cancel-id");
+        getStore().then(function (s) { return s.deleteBooking(id); })
+          .then(loadParentCalendarData)
+          .then(function () { drawParentCalendar(); renderParentDateModal(iso); loadMyBookings(); });
+      });
+    });
+  }
+
+  function renderParentRequests(composeKind) {
+    composeKind = composeKind === "oneoff" ? "oneoff" : "recurring";
+    var el = document.getElementById("parentRequests");
+    if (!el) return;
+    el.innerHTML = '<p class="empty">Loading…</p>';
+    Promise.all([
+      getStore().then(function (s) { return s ? s.listRequests() : []; }),
+      getStore().then(function (s) { return s ? s.listBookings() : []; }),
+      getStore().then(function (s) { return s ? s.listUsers() : []; }),
+      getStore().then(function (s) { return s ? s.listAvailability() : []; })
+    ]).then(function (res) {
+      var allRequests = res[0], allBookings = res[1], allUsers = res[2], allAvailability = res[3];
+      var tutors = allUsers.filter(function (u) { return u.role === "tutor"; })
+        .sort(function (a, b) { return (a.name || "").localeCompare(b.name || ""); });
+
+      function tutorName(email) {
+        var t = tutors.filter(function (x) { return x.email === email; })[0];
+        return t ? t.name : email;
+      }
+
+      // A parent may use any of the tutor's OPEN slots, or one the tutor reserved specifically for them.
+      function availableSlotsFor(tutorEmail) {
+        return allAvailability.filter(function (a) {
+          return a.tutorEmail === tutorEmail && a.date >= todayIso() &&
+            (!a.studentEmail || a.studentEmail === state.user.email);
+        }).sort(function (a, b) { return (a.date + a.start).localeCompare(b.date + b.start); });
+      }
+
+      function renderTutorAvailList(tutorEmail) {
+        var slots = availableSlotsFor(tutorEmail);
+        var html = slots.length
+          ? '<p style="color:var(--muted);font-size:0.85rem;margin:6px 0">Times this tutor has marked free — pick one to fill in the form below.</p>' +
+            '<div class="day-slot-list">' + slots.map(function (a) {
+              return '<div class="day-slot-item"><div class="day-slot-main"><strong>' + esc(formatDateLabel(a.date)) + "</strong>" +
+                '<span>' + esc(a.start) + "–" + esc(a.end) + "</span></div>" +
+                '<div class="day-slot-actions"><button type="button" class="btn secondary small" data-use-avail="' + esc(a.date) + "|" + esc(a.start) + "|" + esc(a.end) + '">Use this time</button></div></div>';
+            }).join("") + "</div>"
+          : "";
+        var box = document.getElementById("reqTutorAvail");
+        if (box) {
+          box.innerHTML = html;
+          Array.prototype.forEach.call(box.querySelectorAll("[data-use-avail]"), function (btn) {
+            btn.addEventListener("click", function () {
+              var parts = btn.getAttribute("data-use-avail").split("|");
+              document.getElementById("reqFirstDateP").value = parts[0];
+              document.getElementById("reqStartP").value = parts[1];
+              document.getElementById("reqEndP").value = parts[2];
+            });
+          });
+        }
+      }
+
+      var incoming = allRequests.filter(function (r) { return r.parentEmail === state.user.email && r.direction === "tutor-to-parent" && r.status === "pending"; });
+      var sent = allRequests.filter(function (r) { return r.parentEmail === state.user.email && r.direction === "parent-to-tutor"; })
+        .sort(function (a, b) { return (b.createdAt || "").localeCompare(a.createdAt || ""); });
+      var renewals = getRenewalCandidates(allRequests, allBookings, state.user.email, "parentEmail");
+
+      var renewalsHtml = renewals.map(function (x) {
+        return '<div class="day-slot-item"><div class="day-slot-main"><strong>' + esc(tutorName(x.request.tutorEmail)) + "</strong>" +
+          '<span>Every ' + esc(weekdayName(x.request.firstDate)) + ", " + esc(x.request.start) + "–" + esc(x.request.end) + " · ends " + esc(formatDateLabel(x.lastDate)) + "</span></div>" +
+          '<div class="day-slot-actions"><button class="btn small" data-renew-req="' + x.request.id + '">Send renewal request</button></div></div>';
+      }).join("");
+
+      var incomingHtml = incoming.length ? incoming.map(function (r) {
+        return '<div class="day-slot-item"><div class="day-slot-main"><strong>' + esc(tutorName(r.tutorEmail)) + "</strong>" +
+          '<span>' + esc(requestScheduleText(r)) + "</span></div>" +
+          '<div class="day-slot-actions">' +
+            '<button class="btn small" data-accept-req="' + r.id + '">Accept</button>' +
+            '<button class="btn danger small" data-decline-req="' + r.id + '">Decline</button>' +
+          "</div></div>";
+      }).join("") : '<p class="empty">No incoming requests right now.</p>';
+
+      var sentHtml = sent.length ? sent.map(function (r) {
+        var withdrawBtn = r.status === "pending" ? '<button class="btn danger small" data-withdraw-req="' + r.id + '">Withdraw</button>' : "";
+        return '<div class="day-slot-item"><div class="day-slot-main"><strong>' + esc(tutorName(r.tutorEmail)) + "</strong>" +
+          '<span>' + esc(requestScheduleText(r)) + " · " + requestStatusLabel(r.status) + "</span></div>" +
+          '<div class="day-slot-actions">' + withdrawBtn + "</div></div>";
+      }).join("") : '<p class="empty">You haven’t sent any requests yet.</p>';
+
+      var dateLabelP = composeKind === "oneoff" ? "Session date" : "First lesson date";
+
+      el.innerHTML =
+        (renewals.length ? ('<h4 style="font-size:0.9rem;margin:0 0 8px">Ending soon</h4><div class="day-slot-list">' + renewalsHtml + "</div>") : "") +
+        '<h4 style="font-size:0.9rem;margin:16px 0 8px">Incoming requests</h4>' +
+        '<div class="day-slot-list">' + incomingHtml + "</div>" +
+        '<h4 style="font-size:0.9rem;margin:20px 0 8px">Request a tutor</h4>' +
+        '<p style="color:var(--muted);font-size:0.85rem;margin-top:-6px">Missed a lesson, or need an extra session this week? Use "One-off session" for a single date instead of a 4-week block.</p>' +
+        '<div class="cat-tabs" style="margin-bottom:2px">' +
+          '<button type="button" class="tab-btn small" data-reqkindp="recurring" aria-selected="' + (composeKind === "recurring") + '">Recurring (4 weeks)</button>' +
+          '<button type="button" class="tab-btn small" data-reqkindp="oneoff" aria-selected="' + (composeKind === "oneoff") + '">One-off session</button>' +
+        "</div>" +
+        '<label for="reqTutor">Tutor</label>' +
+        '<select id="reqTutor">' + (tutors.length ? tutors.map(function (t) {
+          return '<option value="' + esc(t.email) + '">' + esc(t.name) + "</option>";
+        }).join("") : '<option value="">No tutors available yet</option>') + "</select>" +
+        '<div id="reqTutorAvail"></div>' +
+        '<label for="reqFirstDateP">' + dateLabelP + "</label>" +
+        '<input type="date" id="reqFirstDateP">' +
+        '<div class="field-row">' +
+          '<div><label for="reqStartP">Start time</label><input type="time" id="reqStartP" value="16:00"></div>' +
+          '<div><label for="reqEndP">End time</label><input type="time" id="reqEndP" value="17:00"></div>' +
+        "</div>" +
+        '<button class="btn" id="reqSendP" style="margin-top:16px;width:100%">Send request</button>' +
+        '<div class="msg" id="reqMsgP"></div>' +
+        '<h4 style="font-size:0.9rem;margin:20px 0 8px">Your sent requests</h4>' +
+        '<div class="day-slot-list">' + sentHtml + "</div>";
+
+      var tutorSelect = document.getElementById("reqTutor");
+      if (tutorSelect && tutorSelect.value) {
+        renderTutorAvailList(tutorSelect.value);
+        tutorSelect.addEventListener("change", function () { renderTutorAvailList(tutorSelect.value); });
+      }
+
+      Array.prototype.forEach.call(el.querySelectorAll("[data-reqkindp]"), function (btn) {
+        btn.addEventListener("click", function () { renderParentRequests(btn.getAttribute("data-reqkindp")); });
+      });
+      Array.prototype.forEach.call(el.querySelectorAll("[data-accept-req]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var r = allRequests.filter(function (x) { return x.id === btn.getAttribute("data-accept-req"); })[0];
+          if (!r) return;
+          acceptRequest(r).then(function () { renderParentRequests(composeKind); loadMyBookings(); });
+        });
+      });
+      Array.prototype.forEach.call(el.querySelectorAll("[data-decline-req]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var r = allRequests.filter(function (x) { return x.id === btn.getAttribute("data-decline-req"); })[0];
+          if (!r) return;
+          declineRequest(r).then(function () { renderParentRequests(composeKind); });
+        });
+      });
+      Array.prototype.forEach.call(el.querySelectorAll("[data-withdraw-req]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var r = allRequests.filter(function (x) { return x.id === btn.getAttribute("data-withdraw-req"); })[0];
+          if (!r) return;
+          withdrawRequest(r).then(function () { renderParentRequests(composeKind); });
+        });
+      });
+      Array.prototype.forEach.call(el.querySelectorAll("[data-renew-req]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var x = renewals.filter(function (y) { return y.request.id === btn.getAttribute("data-renew-req"); })[0];
+          if (!x) return;
+          var r = x.request;
+          getStore().then(function (s) {
+            return s.addRequest({
+              direction: "parent-to-tutor", tutorEmail: r.tutorEmail, parentEmail: r.parentEmail,
+              childName: r.childName, cohort: r.cohort, kind: "recurring", firstDate: x.nextFirst, start: r.start, end: r.end,
+              status: "pending", createdAt: new Date().toISOString(), renewalOf: r.id
+            });
+          }).then(function () { renderParentRequests(composeKind); });
+        });
+      });
+
+      document.getElementById("reqSendP").addEventListener("click", function () {
+        var msg = document.getElementById("reqMsgP");
+        msg.textContent = ""; msg.className = "msg";
+        var tutorEmail = document.getElementById("reqTutor").value;
+        var firstDate = document.getElementById("reqFirstDateP").value;
+        var start = document.getElementById("reqStartP").value;
+        var end = document.getElementById("reqEndP").value;
+        if (!tutorEmail) { msg.textContent = "Pick a tutor first."; msg.className = "msg error"; return; }
+        if (!firstDate) { msg.textContent = "Pick a date."; msg.className = "msg error"; return; }
+        if (!start || !end || start >= end) { msg.textContent = "Check the start and end time."; msg.className = "msg error"; return; }
+        getStore().then(function (s) {
+          if (!s) { msg.textContent = "Storage unavailable right now."; msg.className = "msg error"; return; }
+          return s.addRequest({
+            direction: "parent-to-tutor", tutorEmail: tutorEmail, parentEmail: state.user.email,
+            childName: state.user.childName, cohort: state.user.cohort, kind: composeKind, firstDate: firstDate, start: start, end: end,
+            status: "pending", createdAt: new Date().toISOString()
+          });
+        }).then(function () { renderParentRequests(composeKind); }).catch(function () { msg.textContent = "Couldn’t send — check your access."; msg.className = "msg error"; });
+      });
+    }).catch(function () { el.innerHTML = '<p class="empty">Couldn’t load requests.</p>'; });
+  }
+
+  function loadMyBookings() {
+    var el = document.getElementById("myBookings");
+    if (!el) return;
+    el.innerHTML = '<p class="empty">Loading…</p>';
+    Promise.all([
+      getStore().then(function (s) { return s ? s.listBookings() : []; }),
+      getStore().then(function (s) { return s ? s.listUsers() : []; })
+    ]).then(function (res) {
+      var allBookings = res[0], allUsers = res[1];
+      var mine = allBookings.filter(function (b) { return b.parentEmail === state.user.email; });
+      if (!mine.length) { el.innerHTML = '<p class="empty">No lessons booked yet.</p>'; return; }
+      mine.sort(function (a, b) { return (a.date + a.start).localeCompare(b.date + b.start); });
+      el.innerHTML = mine.map(function (b) {
+        var tutor = allUsers.filter(function (u) { return u.email === b.tutorEmail; })[0];
+        var joinBtn = (tutor && tutor.teamsLink)
+          ? '<a class="btn secondary small" href="' + esc(tutor.teamsLink) + '" target="_blank" rel="noopener">Join Teams call</a>'
+          : "";
+        return '<div class="slot-item"><div class="slot-main"><span class="slot-day">' + esc(formatDateLabel(b.date)) + " · " + esc(tutor ? tutor.name : "Tutor") + "</span>" +
+          '<span class="slot-time">' + esc(b.start) + "–" + esc(b.end) + "</span></div>" +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' + joinBtn +
+          '<button class="btn danger small" data-bid="' + b.id + '">Cancel</button></div></div>';
+      }).join("");
+      Array.prototype.forEach.call(el.querySelectorAll("[data-bid]"), function (btn) {
+        btn.addEventListener("click", function () {
+          getStore().then(function (s) { return s.deleteBooking(btn.getAttribute("data-bid")); }).then(loadMyBookings);
+        });
+      });
+    });
+  }
+
+  // Parents only ever see resources for their own child's year group and exam board — unlike
+  // the tutor-side resource browser, there's no board/year tab to switch away from that, just
+  // a label showing which one is active. Category and subject (what the resource actually is)
+  // stay freely browsable.
+  function renderParentResourceTabs(activeCat, activeSub) {
+    activeCat = activeCat || RES_CATEGORIES[0];
+    var hasSub = RES_CATEGORIES_WITH_SUBJECTS.indexOf(activeCat) !== -1;
+    activeSub = hasSub ? (activeSub || RES_SUBJECTS[0]) : null;
+    var activeBoard = (state.user && state.user.board) || "combined";
+    var activeYear = hasSub ? ((state.user && state.user.cohort) || RES_YEARGROUPS[0].id) : null;
+
+    var boardTabsEl = document.getElementById("resBoardTabsP");
+    boardTabsEl.innerHTML = '<span class="role-tag small">' + esc(boardLabel(activeBoard)) + "</span>";
+
+    var tabsEl = document.getElementById("resTabsP");
+    tabsEl.innerHTML = RES_CATEGORIES.map(function (c) {
+      return '<button class="tab-btn" data-catp="' + esc(c) + '" aria-selected="' + (c === activeCat) + '">' + esc(c) + "</button>";
+    }).join("");
+    Array.prototype.forEach.call(tabsEl.querySelectorAll("[data-catp]"), function (btn) {
+      btn.addEventListener("click", function () { renderParentResourceTabs(btn.getAttribute("data-catp"), null); });
+    });
+
+    var subTabsEl = document.getElementById("resSubTabsP");
+    var yearTabsEl = document.getElementById("resYearTabsP");
+    if (hasSub) {
+      subTabsEl.style.display = "";
+      subTabsEl.innerHTML = RES_SUBJECTS.map(function (s) {
+        return '<button class="tab-btn small" data-subp="' + esc(s) + '" aria-selected="' + (s === activeSub) + '">' + esc(s) + "</button>";
+      }).join("");
+      Array.prototype.forEach.call(subTabsEl.querySelectorAll("[data-subp]"), function (btn) {
+        btn.addEventListener("click", function () { renderParentResourceTabs(activeCat, btn.getAttribute("data-subp")); });
+      });
+      yearTabsEl.style.display = "";
+      yearTabsEl.innerHTML = '<span class="role-tag small">' + esc(cohortLabel(activeYear)) + "</span>";
+    } else {
+      subTabsEl.style.display = "none";
+      subTabsEl.innerHTML = "";
+      yearTabsEl.style.display = "none";
+      yearTabsEl.innerHTML = "";
+    }
+
+    var listEl = document.getElementById("resListP");
+    listEl.innerHTML = '<p class="empty">Loading…</p>';
+    getStore().then(function (s) { return s ? s.listResources() : []; }).then(function (all) {
+      var mine = all.filter(function (r) {
+        return r.category === activeCat && (activeSub ? r.subject === activeSub : !r.subject) &&
+          resourceMatchesBoard(r, activeBoard) && resourceMatchesYear(r, activeYear);
+      });
+      mine.sort(function (a, b) { return (a.title || "").localeCompare(b.title || "", undefined, { numeric: true }); });
+      if (!mine.length) { listEl.innerHTML = '<p class="empty">Nothing here yet.</p>'; return; }
+      listEl.innerHTML = mine.map(function (r, i) {
+        return '<div class="res-item"><div>' + esc(r.title) +
+          '<div class="res-meta" id="resMetaP' + i + '">Added by ' + esc(r.uploadedBy || "a tutor") + "</div></div>" +
+          '<div class="actions-menu"><button class="btn secondary small actions-btn" type="button">Actions ▾</button>' +
+            '<div class="actions-dropdown">' +
+              '<button class="menu-item" type="button" data-resp-open="' + i + '">View</button>' +
+              '<button class="menu-item" type="button" data-resp-save="' + i + '">Save</button>' +
+            "</div>" +
+          "</div>" +
+          "</div>";
+      }).join("");
+      wireActionsMenus(listEl);
+      Array.prototype.forEach.call(listEl.querySelectorAll("[data-resp-open]"), function (btn) {
+        var idx = Number(btn.getAttribute("data-resp-open"));
+        btn.addEventListener("click", function () { closeAllActionsMenus(); openResourceFile(mine[idx], "resMetaP" + idx); });
+      });
+      Array.prototype.forEach.call(listEl.querySelectorAll("[data-resp-save]"), function (btn) {
+        var idx = Number(btn.getAttribute("data-resp-save"));
+        btn.addEventListener("click", function () { closeAllActionsMenus(); downloadResourceFile(mine[idx], "resMetaP" + idx); });
+      });
+    }).catch(function () { listEl.innerHTML = '<p class="empty">Couldn’t load resources.</p>'; });
+  }
+
+  // ---------- boot ----------
+  function boot() {
+    try {
+      var savedUser = sessionStorage.getItem("passframe_portal_user");
+      var savedToken = sessionStorage.getItem("passframe_portal_token");
+      if (savedUser && savedToken) {
+        state.user = JSON.parse(savedUser);
+        state.sessionToken = savedToken;
+      }
+    } catch (e) {}
+
+    renderAll();
+  }
+
+  if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", boot); } else { boot(); }
+
+  window.__PORTAL_APP__ = { state: state, renderAll: renderAll, cohortLabel: cohortLabel };
+})();
+</script>
+</body>
+</html>

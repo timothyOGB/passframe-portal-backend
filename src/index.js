@@ -97,7 +97,10 @@ app.get("/api/me", requireAuth, async (c) => {
 
 // ---------- users (founder-managed logins) ----------
 
-app.get("/api/users", requireAuth, requireFounder, async (c) => {
+// Any signed-in account (not just founders) can read the directory: tutors need
+// their students' names/cohorts, parents need their tutor's name/Teams link, and
+// userPublic() never includes pin_hash/pin_salt, so this leaks nothing sensitive.
+app.get("/api/users", requireAuth, async (c) => {
   const { results } = await c.env.DB.prepare("SELECT * FROM users ORDER BY role, name").all();
   return c.json({ users: results.map(userPublic) });
 });
@@ -152,6 +155,38 @@ app.post("/api/users/:email/pin", requireAuth, async (c) => {
   ).bind(pinHash, salt, targetEmail).run();
 
   return c.json({ ok: true });
+});
+
+app.patch("/api/users/:email", requireAuth, async (c) => {
+  const auth = c.get("auth");
+  const targetEmail = c.req.param("email").toLowerCase();
+  if (!auth.isFounder && auth.email !== targetEmail) return c.json({ error: "You can only edit your own profile." }, 403);
+
+  const existing = await c.env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(targetEmail).first();
+  if (!existing) return c.json({ error: "That login couldn't be found anymore." }, 404);
+
+  const body = await c.req.json();
+  const fields = {
+    name: "name",
+    teamsLink: "teams_link",
+    photoDataUrl: "photo_data_url",
+    childName: "child_name",
+    cohort: "cohort",
+    board: "board"
+  };
+  const sets = [];
+  const values = [];
+  for (const [key, column] of Object.entries(fields)) {
+    if (Object.prototype.hasOwnProperty.call(body, key)) {
+      sets.push(`${column} = ?`);
+      values.push(body[key] === "" ? null : body[key]);
+    }
+  }
+  if (sets.length === 0) return c.json({ ok: true });
+
+  await c.env.DB.prepare(`UPDATE users SET ${sets.join(", ")} WHERE email = ?`).bind(...values, targetEmail).run();
+  const row = await c.env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(targetEmail).first();
+  return c.json({ ok: true, user: userPublic(row) });
 });
 
 app.delete("/api/users/:email", requireAuth, requireFounder, async (c) => {
