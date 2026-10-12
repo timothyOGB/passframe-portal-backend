@@ -18,6 +18,7 @@ function userPublic(row) {
     isFounder: !!row.is_founder,
     photoDataUrl: row.photo_data_url || null,
     teamsLink: row.teams_link || null,
+    linkedinUrl: row.linkedin_url || null,
     childName: row.child_name || null,
     cohort: row.cohort || null,
     board: row.board || null
@@ -120,8 +121,8 @@ app.post("/api/users", requireAuth, requireFounder, async (c) => {
   const pinHash = await hashPin(password, salt);
 
   await c.env.DB.prepare(
-    `INSERT INTO users (email, role, name, pin_hash, pin_salt, is_founder, photo_data_url, teams_link, child_name, cohort, board)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO users (email, role, name, pin_hash, pin_salt, is_founder, photo_data_url, teams_link, linkedin_url, child_name, cohort, board)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     email,
     body.role === "tutor" ? "tutor" : "parent",
@@ -131,6 +132,7 @@ app.post("/api/users", requireAuth, requireFounder, async (c) => {
     body.isFounder ? 1 : 0,
     body.photoDataUrl || null,
     body.teamsLink || null,
+    body.linkedinUrl || null,
     body.childName || null,
     body.cohort || null,
     body.board || null
@@ -172,6 +174,7 @@ app.patch("/api/users/:email", requireAuth, async (c) => {
   const fields = {
     name: "name",
     teamsLink: "teams_link",
+    linkedinUrl: "linkedin_url",
     photoDataUrl: "photo_data_url",
     childName: "child_name",
     cohort: "cohort",
@@ -199,11 +202,11 @@ app.delete("/api/users/:email", requireAuth, requireFounder, async (c) => {
   if (!row) return c.json({ error: "That login couldn't be found anymore." }, 404);
 
   await c.env.DB.prepare(
-    `INSERT INTO archive (email, role, name, pin_hash, pin_salt, is_founder, photo_data_url, teams_link, child_name, cohort, board, archived_at, archived_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO archive (email, role, name, pin_hash, pin_salt, is_founder, photo_data_url, teams_link, linkedin_url, child_name, cohort, board, archived_at, archived_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     row.email, row.role, row.name, row.pin_hash, row.pin_salt, row.is_founder,
-    row.photo_data_url, row.teams_link, row.child_name, row.cohort, row.board,
+    row.photo_data_url, row.teams_link, row.linkedin_url, row.child_name, row.cohort, row.board,
     new Date().toISOString(), auth.email
   ).run();
   await c.env.DB.prepare("DELETE FROM users WHERE email = ?").bind(email).run();
@@ -225,11 +228,11 @@ app.post("/api/archive/:email/restore", requireAuth, requireFounder, async (c) =
   if (existing) return c.json({ error: `A login already exists for "${email}". Remove or rename it before restoring this one.` }, 409);
 
   await c.env.DB.prepare(
-    `INSERT INTO users (email, role, name, pin_hash, pin_salt, is_founder, photo_data_url, teams_link, child_name, cohort, board)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO users (email, role, name, pin_hash, pin_salt, is_founder, photo_data_url, teams_link, linkedin_url, child_name, cohort, board)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     row.email, row.role, row.name, row.pin_hash, row.pin_salt, row.is_founder,
-    row.photo_data_url, row.teams_link, row.child_name, row.cohort, row.board
+    row.photo_data_url, row.teams_link, row.linkedin_url, row.child_name, row.cohort, row.board
   ).run();
   await c.env.DB.prepare("DELETE FROM archive WHERE email = ?").bind(email).run();
 

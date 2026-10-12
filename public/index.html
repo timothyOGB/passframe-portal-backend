@@ -887,6 +887,8 @@
           '<input type="password" id="tutPin" autocomplete="new-password" placeholder="At least 8 characters">' +
           '<label for="tutPhoto">Photo (optional)</label>' +
           '<input type="file" id="tutPhoto" accept="image/*">' +
+          '<label for="tutLinkedin">LinkedIn (optional)</label>' +
+          '<input type="url" id="tutLinkedin" autocomplete="off" placeholder="https://www.linkedin.com/in/...">' +
           '<label class="checkbox-row" for="tutFounder"><input type="checkbox" id="tutFounder"> Founder access (gold badge, View tutors, Email anyone, upload files)</label>' +
           '<button class="btn" id="tutAdd" style="margin-top:16px">Add tutor login</button>' +
           '<div class="msg" id="tutMsg"></div>' +
@@ -1182,11 +1184,13 @@
       var password = document.getElementById("tutPin").value.trim();
       var isFounderNew = document.getElementById("tutFounder").checked;
       var fileInput = document.getElementById("tutPhoto");
+      var linkedinUrl = document.getElementById("tutLinkedin").value.trim();
       var msg = document.getElementById("tutMsg");
       msg.textContent = ""; msg.className = "msg";
       if (!name) { msg.textContent = "Enter the tutor’s name."; msg.className = "msg error"; return; }
       if (!id || !isValidLoginId(id)) { msg.textContent = "Enter a valid email or username (letters/numbers, 3+ characters)."; msg.className = "msg error"; return; }
       if (password.length < 8) { msg.textContent = "Password must be at least 8 characters."; msg.className = "msg error"; return; }
+      if (linkedinUrl && !/^https?:\/\//i.test(linkedinUrl)) { msg.textContent = "LinkedIn link should start with http:// or https://."; msg.className = "msg error"; return; }
       addBtn.disabled = true;
       var hasFile = fileInput.files && fileInput.files[0];
       // No more "assets" capability to upload a photo to — just read it straight into a
@@ -1197,12 +1201,14 @@
         var data = { email: id, password: password, role: "tutor", name: name };
         if (isFounderNew) data.isFounder = true;
         if (photoUrl) data.photoDataUrl = photoUrl;
+        if (linkedinUrl) data.linkedinUrl = linkedinUrl;
         return getStore().then(function (s) { return s.createUser(data); });
       }).then(function () {
         msg.textContent = "Tutor login added."; msg.className = "msg ok";
         document.getElementById("tutName").value = "";
         document.getElementById("tutId").value = "";
         document.getElementById("tutPin").value = "";
+        document.getElementById("tutLinkedin").value = "";
         document.getElementById("tutFounder").checked = false;
         fileInput.value = "";
         loadTutorList();
@@ -1224,7 +1230,7 @@
         return '<div class="slot-item"><div class="tutor-row">' +
           '<div class="tutor-row-avatar">' + (t.photoDataUrl ? '<img src="' + esc(t.photoDataUrl) + '" alt="">' : esc((t.name || "?")[0])) + "</div>" +
           '<div class="slot-main"><span class="slot-day">' + esc(t.name) + " " + (t.isFounder ? '<span class="founder-badge small">Founder</span>' : '<span class="role-tag small">Tutor</span>') + (isSelf ? " (you)" : "") + "</span>" +
-          '<span class="slot-credentials">Login: <strong>' + esc(t.email) + "</strong></span></div></div>" +
+          '<span class="slot-credentials">Login: <strong>' + esc(t.email) + "</strong>" + (t.linkedinUrl ? ' · <a href="' + esc(t.linkedinUrl) + '" target="_blank" rel="noopener">LinkedIn</a>' : "") + "</span></div></div>" +
           '<div class="actions-menu"><button class="btn secondary small actions-btn" type="button">Actions ▾</button>' +
             '<div class="actions-dropdown">' +
               '<button class="menu-item" type="button" data-pin-tutor="' + esc(t.email) + '" data-pin-name="' + esc(t.name) + (isSelf ? " (you)" : "") + '">Change password</button>' +
@@ -1746,7 +1752,9 @@
     var tutor = viewTutorsList.filter(function (t) { return t.email === viewTutorEmail; })[0] || {};
 
     body.innerHTML =
-      '<div class="credential-box">Login: <strong>' + esc(tutor.email || viewTutorEmail) + "</strong></div>" +
+      '<div class="credential-box">Login: <strong>' + esc(tutor.email || viewTutorEmail) + "</strong>" +
+        (tutor.linkedinUrl ? ' · <a href="' + esc(tutor.linkedinUrl) + '" target="_blank" rel="noopener">LinkedIn</a>' : "") +
+      "</div>" +
       '<div class="cal-with-sidebar">' +
         '<div id="viewTutorCal" class="cal-main"></div>' +
         '<div class="cal-sidebar">' +
