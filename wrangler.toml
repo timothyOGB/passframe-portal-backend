@@ -18,5 +18,5 @@ binding = "ASSETS"
 not_found_handling = "none"
 
 [[routes]]
-pattern = "portal.passframe.co.uk"
-custom_domain = true
+pattern = "portal.passframe.co.uk/*"
+zone_name = "passframe.co.uk"
