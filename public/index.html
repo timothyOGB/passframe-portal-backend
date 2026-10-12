@@ -1075,11 +1075,45 @@
       if (p1 !== p2) { msg.textContent = "Passwords don’t match."; msg.className = "msg error"; return; }
       getStore().then(function (s) {
         return s.setPassword(id, p1).then(function () {
-          closeModal();
           refreshAfterRemoval();
+          openPasswordSetConfirmation(id, displayName, p1);
         });
       }).catch(function (err) { msg.textContent = err.message || "Couldn’t save — check your access."; msg.className = "msg error"; });
     });
+  }
+
+  // Shows the password right back after a founder sets it — this is not stored anywhere
+  // retrievable (it's hashed server-side the moment it's saved), so this screen, showing
+  // what was just typed in this same action, is the only point it can ever be read back.
+  function openPasswordSetConfirmation(id, displayName, password) {
+    openModal(
+      "<h3>Password set for " + esc(displayName) + "</h3>" +
+      '<p style="color:var(--muted);font-size:0.9rem">Login: <strong>' + esc(id) + "</strong></p>" +
+      '<p style="color:var(--muted);font-size:0.85rem">This is shown once, right now — it isn’t stored anywhere you (or anyone) can look it up later. Copy or note it down before closing.</p>' +
+      '<div class="credential-box" id="cpRevealBox" style="font-family:monospace;font-size:1.05rem;word-break:break-all;user-select:all">' + esc(password) + "</div>" +
+      '<button class="btn secondary" id="cpCopyBtn" style="margin-top:12px;width:100%">Copy password</button>' +
+      '<button class="btn" id="cpDoneBtn" style="margin-top:8px;width:100%">Done</button>' +
+      '<div class="msg" id="cpCopyMsg"></div>'
+    );
+    document.getElementById("cpCopyBtn").addEventListener("click", function () {
+      var copyMsg = document.getElementById("cpCopyMsg");
+      var fallback = function () {
+        var box = document.getElementById("cpRevealBox");
+        var range = document.createRange();
+        range.selectNodeContents(box);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      };
+      var done = function () { copyMsg.textContent = "Copied."; copyMsg.className = "msg ok"; };
+      var failed = function () { fallback(); copyMsg.textContent = "Couldn’t copy automatically — it’s selected, so Ctrl/Cmd+C will work."; copyMsg.className = "msg error"; };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(password).then(done).catch(failed);
+      } else {
+        failed();
+      }
+    });
+    document.getElementById("cpDoneBtn").addEventListener("click", closeModal);
   }
 
   // Lets a founder (or a tutor for themselves) replace a tutor's avatar — the only way to fix
