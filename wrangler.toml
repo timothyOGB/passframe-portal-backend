@@ -16,3 +16,7 @@ bucket_name = "passframe-worksheets"
 directory = "./public"
 binding = "ASSETS"
 not_found_handling = "none"
+
+[[routes]]
+pattern = "portal.passframe.co.uk"
+custom_domain = true
