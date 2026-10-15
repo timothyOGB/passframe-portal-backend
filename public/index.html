@@ -370,9 +370,9 @@
     { id: "bexley", label: "Bexley" },
     { id: "combined", label: "Kent & Bexley" }
   ];
-  var RES_CATEGORIES = ["Lessons", "Homework", "Mark schemes", "Resource lists"];
+  var RES_CATEGORIES = ["Lessons", "Homework", "Supplementary", "Mark schemes", "Resource lists"];
   var RES_SUBJECTS = ["Maths", "English", "Verbal Reasoning", "Non-Verbal Reasoning"];
-  var RES_CATEGORIES_WITH_SUBJECTS = ["Mark schemes", "Lessons", "Homework"];
+  var RES_CATEGORIES_WITH_SUBJECTS = ["Mark schemes", "Lessons", "Homework", "Supplementary"];
   // Year group only applies once a subject is picked (Mark schemes/Lessons/Homework) — a Year 4
   // student and a Year 5 Accelerated student work through the same topic bank at different
   // depth/pace, so each topic's content is written separately per year group. Ids match COHORTS.
@@ -882,7 +882,7 @@
         '<div class="msg" id="teamsLinkMsg"></div>'
       ) +
       accordionCard("Resources",
-        '<p style="color:var(--muted);font-size:0.9rem">Lessons, homework, mark schemes and resource lists — pick a board, then a category, then (for Maths/English/VR/NVR) a year group.</p>' +
+        '<p style="color:var(--muted);font-size:0.9rem">Lessons, homework, supplementary practice, mark schemes and resource lists — pick a board, then a category, then (for Maths/English/VR/NVR) a year group.</p>' +
         '<div class="cat-tabs" id="resBoardTabs"></div>' +
         '<div class="cat-tabs" id="resTabs"></div>' +
         '<div class="cat-tabs" id="resSubTabs" style="margin-top:-6px"></div>' +
@@ -2265,7 +2265,7 @@
       "</div>" +
       accordionCard("Your lessons", '<div id="myBookings"></div>') +
       accordionCard("Resources",
-        '<p style="color:var(--muted);font-size:0.9rem">Lessons, homework, mark schemes and resource lists for ' + esc(u.childName || "your child") + ", matched automatically to " + esc(u.childName ? (u.childName + "’s") : "their") + ' year group and exam board. Pick a category, then (for Maths/English/VR/NVR) a subject.</p>' +
+        '<p style="color:var(--muted);font-size:0.9rem">Lessons, homework, supplementary practice, mark schemes and resource lists for ' + esc(u.childName || "your child") + ", matched automatically to " + esc(u.childName ? (u.childName + "’s") : "their") + ' year group and exam board. Pick a category, then (for Maths/English/VR/NVR) a subject.</p>' +
         '<div class="cat-tabs" id="resBoardTabsP"></div>' +
         '<div class="cat-tabs" id="resTabsP"></div>' +
         '<div class="cat-tabs" id="resSubTabsP" style="margin-top:-6px"></div>' +
