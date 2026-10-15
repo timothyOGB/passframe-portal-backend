@@ -448,6 +448,52 @@ app.delete("/api/resources/:id", requireAuth, requireFounder, async (c) => {
   return c.json({ ok: true });
 });
 
+// ---------- reviews ----------
+// Students/parents leave a review from the bottom of their own portal. Reviews are
+// visible only to founders (Timothy and David) — not to other tutors, and not to
+// other families — who see every review in a comment-style feed at the bottom of
+// their own portal.
+
+app.get("/api/reviews", requireAuth, requireFounder, async (c) => {
+  const { results } = await c.env.DB.prepare("SELECT * FROM reviews ORDER BY created_at DESC").all();
+  return c.json({ reviews: results });
+});
+
+// A parent/student can see their own past reviews (to confirm what they sent),
+// but never anyone else's — that stays founder-only above.
+app.get("/api/reviews/mine", requireAuth, async (c) => {
+  const auth = c.get("auth");
+  if (auth.role !== "parent") return c.json({ reviews: [] });
+  const { results } = await c.env.DB.prepare(
+    "SELECT * FROM reviews WHERE parent_email = ? ORDER BY created_at DESC"
+  ).bind(auth.email).all();
+  return c.json({ reviews: results });
+});
+
+app.post("/api/reviews", requireAuth, async (c) => {
+  const auth = c.get("auth");
+  if (auth.role !== "parent") return c.json({ error: "Only students and parents can leave a review." }, 403);
+
+  const body = await c.req.json();
+  const comment = String(body.comment || "").trim();
+  if (!comment) return c.json({ error: "Write a few words before sending." }, 400);
+  const ratingNum = Number(body.rating);
+  const rating = Number.isInteger(ratingNum) && ratingNum >= 1 && ratingNum <= 5 ? ratingNum : null;
+
+  const id = newId();
+  await c.env.DB.prepare(
+    "INSERT INTO reviews (id, parent_email, rating, comment, created_at) VALUES (?, ?, ?, ?, ?)"
+  ).bind(id, auth.email, rating, comment, new Date().toISOString()).run();
+
+  return c.json({ ok: true, id });
+});
+
+app.delete("/api/reviews/:id", requireAuth, requireFounder, async (c) => {
+  const id = c.req.param("id");
+  await c.env.DB.prepare("DELETE FROM reviews WHERE id = ?").bind(id).run();
+  return c.json({ ok: true });
+});
+
 app.notFound((c) => c.json({ error: "Not found." }, 404));
 
 export default app;

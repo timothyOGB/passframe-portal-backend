@@ -158,6 +158,19 @@
   .res-item a { font-weight: 600; }
   .res-meta { font-size: 0.78rem; color: var(--muted); }
   .hidden { display: none !important; }
+  .review-item {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;
+  }
+  .review-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+  .review-who { font-family: var(--display); font-weight: 700; font-size: 0.88rem; }
+  .review-date { color: var(--muted); font-size: 0.76rem; margin-left: auto; }
+  .review-stars { color: var(--brand); font-size: 0.95rem; letter-spacing: 1px; }
+  .review-text { font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; }
+  .star-picker { display: flex; gap: 4px; margin: 6px 0 16px; }
+  .star-picker button {
+    background: none; border: none; font-size: 1.6rem; line-height: 1; cursor: pointer; color: var(--line); padding: 2px;
+  }
+  .star-picker button.on { color: var(--brand); }
 
   /* Hero (logged out) */
   .hero-panel { text-align: center; max-width: 560px; margin: 40px auto 0; }
@@ -357,7 +370,7 @@
     { id: "bexley", label: "Bexley" },
     { id: "combined", label: "Kent & Bexley" }
   ];
-  var RES_CATEGORIES = ["Mark schemes", "Lessons", "Homework", "Resource lists"];
+  var RES_CATEGORIES = ["Lessons", "Homework", "Mark schemes", "Resource lists"];
   var RES_SUBJECTS = ["Maths", "English", "Verbal Reasoning", "Non-Verbal Reasoning"];
   var RES_CATEGORIES_WITH_SUBJECTS = ["Mark schemes", "Lessons", "Homework"];
   // Year group only applies once a subject is picked (Mark schemes/Lessons/Homework) — a Year 4
@@ -610,6 +623,21 @@
       title: r.title, url: r.file_path, uploadedBy: r.uploaded_by, uploadedAt: r.uploaded_at
     };
   }
+  function mapReview(r) {
+    return { id: r.id, parentEmail: r.parent_email, rating: r.rating, comment: r.comment, createdAt: r.created_at };
+  }
+
+  // ---------- reviews helpers ----------
+  function starsHtml(rating) {
+    if (!rating) return "";
+    var out = "";
+    for (var i = 1; i <= 5; i++) out += (i <= rating ? "★" : "☆");
+    return '<span class="review-stars">' + out + "</span>";
+  }
+  function formatReviewDate(iso) {
+    if (!iso) return "";
+    return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  }
 
   // Reads a File/Blob into a base64 data: URL, for inline storage (tutor photos) where
   // there's no separate upload step to call first.
@@ -689,7 +717,15 @@
           });
         });
       },
-      restoreArchive: function (email) { return apiFetch("/api/archive/" + encodeURIComponent(email) + "/restore", { method: "POST" }); }
+      restoreArchive: function (email) { return apiFetch("/api/archive/" + encodeURIComponent(email) + "/restore", { method: "POST" }); },
+      listReviews: function () {
+        return apiFetch("/api/reviews").then(function (res) { return (res.reviews || []).map(mapReview); });
+      },
+      listMyReviews: function () {
+        return apiFetch("/api/reviews/mine").then(function (res) { return (res.reviews || []).map(mapReview); });
+      },
+      addReview: function (data) { return apiFetch("/api/reviews", { method: "POST", body: data }); },
+      deleteReview: function (id) { return apiFetch("/api/reviews/" + encodeURIComponent(id), { method: "DELETE" }); }
     };
   }
 
@@ -754,7 +790,7 @@
         '<div class="hero-points">' +
           '<div class="hero-point"><strong>Requests</strong><span>Ask a specific tutor for a regular weekly time — they accept or decline.</span></div>' +
           '<div class="hero-point"><strong>Recurring lessons</strong><span>An accepted request books the same day and time for 4 weeks.</span></div>' +
-          '<div class="hero-point"><strong>Resources</strong><span>Mark schemes, lessons, homework, and more.</span></div>' +
+          '<div class="hero-point"><strong>Resources</strong><span>Lessons, homework, mark schemes, and more.</span></div>' +
         "</div>" +
       "</div>";
     document.getElementById("heroLoginBtn").addEventListener("click", function () { openAuthModal(); });
@@ -846,7 +882,7 @@
         '<div class="msg" id="teamsLinkMsg"></div>'
       ) +
       accordionCard("Resources",
-        '<p style="color:var(--muted);font-size:0.9rem">Mark schemes, lessons, homework and resource lists — pick a board, then a category, then (for Maths/English/VR/NVR) a year group.</p>' +
+        '<p style="color:var(--muted);font-size:0.9rem">Lessons, homework, mark schemes and resource lists — pick a board, then a category, then (for Maths/English/VR/NVR) a year group.</p>' +
         '<div class="cat-tabs" id="resBoardTabs"></div>' +
         '<div class="cat-tabs" id="resTabs"></div>' +
         '<div class="cat-tabs" id="resSubTabs" style="margin-top:-6px"></div>' +
@@ -909,13 +945,17 @@
         accordionCard("Archive",
           '<p style="color:var(--muted);font-size:0.9rem">Removed tutor and student logins land here rather than disappearing — a record for audit purposes, with a Restore option.</p>' +
           '<div id="archiveList"></div>'
+        ) +
+        accordionCard("Reviews",
+          '<p style="color:var(--muted);font-size:0.9rem">Reviews families leave from their own portal — visible only to Timothy and David.</p>' +
+          '<div id="reviewsList"></div>'
         )
       ) : "");
 
     loadTutorCalendarData().then(drawTutorCalendar);
     renderTutorRequests();
     loadStudentsCache();
-    renderResourceTabs("combined", "Mark schemes");
+    renderResourceTabs("combined", "Lessons");
     renderSyllabusSection("combined");
     wireTeamsLink();
     if (u.isFounder) {
@@ -926,7 +966,32 @@
       loadTutorList();
       loadArchiveList();
       document.getElementById("openViewTutors").addEventListener("click", openViewTutorsModal);
+      loadReviewsList();
     }
+  }
+
+  // Comment-style feed of every review a family has left, visible only on Timothy's
+  // and David's (founder) portals — never to other tutors or other families.
+  function loadReviewsList() {
+    var listEl = document.getElementById("reviewsList");
+    if (!listEl) return;
+    listEl.innerHTML = '<p class="empty">Loading…</p>';
+    getStore().then(function (s) { return s.listReviews(); }).then(function (reviews) {
+      if (!reviews.length) { listEl.innerHTML = '<p class="empty">No reviews yet.</p>'; return; }
+      listEl.innerHTML = reviews.map(function (r) {
+        return '<div class="review-item">' +
+          '<div class="review-head"><span class="review-who">' + esc(studentLabelByEmail(r.parentEmail)) + "</span>" +
+            starsHtml(r.rating) + '<span class="review-date">' + esc(formatReviewDate(r.createdAt)) + "</span></div>" +
+          '<div class="review-text">' + esc(r.comment) + "</div>" +
+          '<button class="btn danger small" style="margin-top:8px" data-review-remove="' + esc(r.id) + '">Remove</button>' +
+        "</div>";
+      }).join("");
+      Array.prototype.forEach.call(listEl.querySelectorAll("[data-review-remove]"), function (btn) {
+        btn.addEventListener("click", function () {
+          getStore().then(function (s) { return s.deleteReview(btn.getAttribute("data-review-remove")); }).then(loadReviewsList);
+        });
+      });
+    }).catch(function () { listEl.innerHTML = '<p class="empty">Couldn’t load reviews.</p>'; });
   }
 
   function wireStudentManagement() {
@@ -2200,7 +2265,7 @@
       "</div>" +
       accordionCard("Your lessons", '<div id="myBookings"></div>') +
       accordionCard("Resources",
-        '<p style="color:var(--muted);font-size:0.9rem">Mark schemes, lessons, homework and resource lists for ' + esc(u.childName || "your child") + ", matched automatically to " + esc(u.childName ? (u.childName + "’s") : "their") + ' year group and exam board. Pick a category, then (for Maths/English/VR/NVR) a subject.</p>' +
+        '<p style="color:var(--muted);font-size:0.9rem">Lessons, homework, mark schemes and resource lists for ' + esc(u.childName || "your child") + ", matched automatically to " + esc(u.childName ? (u.childName + "’s") : "their") + ' year group and exam board. Pick a category, then (for Maths/English/VR/NVR) a subject.</p>' +
         '<div class="cat-tabs" id="resBoardTabsP"></div>' +
         '<div class="cat-tabs" id="resTabsP"></div>' +
         '<div class="cat-tabs" id="resSubTabsP" style="margin-top:-6px"></div>' +
@@ -2215,13 +2280,74 @@
             return '<a class="preset-btn" href="' + esc(mailtoHref(PASSFRAME_INBOX, p.subject, contactPresetBody(p, u))) + '">' + esc(p.label) + "</a>";
           }).join("") +
         "</div>"
+      ) +
+      accordionCard("Reviews",
+        '<p style="color:var(--muted);font-size:0.9rem">Tell us how things are going — your review goes straight to Timothy and David.</p>' +
+        '<label>Rating (optional)</label>' +
+        '<div class="star-picker" id="reviewStars">' +
+          [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" data-star="' + n + '" aria-label="' + n + ' star' + (n === 1 ? "" : "s") + '">★</button>'; }).join("") +
+        "</div>" +
+        '<label for="reviewComment">Your review</label>' +
+        '<textarea id="reviewComment" rows="4" placeholder="How has tutoring been going for ' + esc(u.childName || "your child") + '?"></textarea>' +
+        '<button class="btn small" id="reviewSend" style="margin-top:12px">Send review</button>' +
+        '<div class="msg" id="reviewMsg"></div>' +
+        '<div id="myReviewsList" style="margin-top:20px"></div>'
       );
 
     renderParentRequests();
     loadMyBookings();
     loadParentCalendarData().then(drawParentCalendar);
-    renderParentResourceTabs("Mark schemes", null);
+    renderParentResourceTabs("Lessons", null);
     renderSyllabusSection("combined");
+    wireReviewForm();
+    loadMyReviewsList();
+  }
+
+  var reviewRatingSelected = 0;
+  function wireReviewForm() {
+    reviewRatingSelected = 0;
+    var starBtns = document.querySelectorAll("#reviewStars [data-star]");
+    Array.prototype.forEach.call(starBtns, function (btn) {
+      btn.addEventListener("click", function () {
+        reviewRatingSelected = Number(btn.getAttribute("data-star"));
+        Array.prototype.forEach.call(starBtns, function (b2) {
+          b2.classList.toggle("on", Number(b2.getAttribute("data-star")) <= reviewRatingSelected);
+        });
+      });
+    });
+    var sendBtn = document.getElementById("reviewSend");
+    if (!sendBtn) return;
+    sendBtn.addEventListener("click", function () {
+      var commentEl = document.getElementById("reviewComment");
+      var comment = commentEl.value.trim();
+      var msg = document.getElementById("reviewMsg");
+      msg.textContent = ""; msg.className = "msg";
+      if (!comment) { msg.textContent = "Write a few words before sending."; msg.className = "msg error"; return; }
+      getStore().then(function (s) { return s.addReview({ comment: comment, rating: reviewRatingSelected || null }); })
+        .then(function () {
+          msg.textContent = "Thank you — your review has been sent."; msg.className = "msg ok";
+          commentEl.value = "";
+          reviewRatingSelected = 0;
+          Array.prototype.forEach.call(starBtns, function (b2) { b2.classList.remove("on"); });
+          loadMyReviewsList();
+        })
+        .catch(function (err) { msg.textContent = err.message || "Couldn’t send that — try again."; msg.className = "msg error"; });
+    });
+  }
+
+  function loadMyReviewsList() {
+    var listEl = document.getElementById("myReviewsList");
+    if (!listEl) return;
+    getStore().then(function (s) { return s.listMyReviews(); }).then(function (reviews) {
+      if (!reviews.length) { listEl.innerHTML = ""; return; }
+      listEl.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;margin-bottom:8px">Your previous reviews</p>' +
+        reviews.map(function (r) {
+          return '<div class="review-item">' +
+            '<div class="review-head">' + starsHtml(r.rating) + '<span class="review-date">' + esc(formatReviewDate(r.createdAt)) + "</span></div>" +
+            '<div class="review-text">' + esc(r.comment) + "</div>" +
+          "</div>";
+        }).join("");
+    }).catch(function () { listEl.innerHTML = ""; });
   }
 
   function loadParentCalendarData() {
