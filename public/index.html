@@ -166,6 +166,21 @@
   .review-date { color: var(--muted); font-size: 0.76rem; margin-left: auto; }
   .review-stars { color: var(--brand); font-size: 0.95rem; letter-spacing: 1px; }
   .review-text { font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; }
+  /* Reviews live in a plain, always-open card (not the <details> accordion used elsewhere)
+     so they read like a comment section, not something tucked behind a dropdown. */
+  .reviews-card { position: relative; overflow: hidden; }
+  .reviews-card > *:not(.reviews-watermark) { position: relative; z-index: 1; }
+  .reviews-watermark { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .reviews-watermark span {
+    position: absolute; font-family: var(--display); font-weight: 700; color: var(--brand);
+    opacity: 0.06; animation: floatP 9s ease-in-out infinite;
+  }
+  @keyframes floatP { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-14px) rotate(4deg); } }
+  .lesson-notes { border-top: 1px dashed var(--line); margin-top: 10px; padding-top: 10px; }
+  .lesson-notes .note-view { background: var(--wash); border-radius: 10px; padding: 8px 12px; margin-bottom: 10px; }
+  .lesson-notes .note-label { display: block; font-family: var(--display); font-weight: 700; font-size: 0.74rem; color: var(--deep); margin-bottom: 2px; }
+  .lesson-notes .note-view p { font-size: 0.88rem; line-height: 1.45; white-space: pre-wrap; margin: 0; }
+  .lesson-notes textarea { width: 100%; }
   .star-picker { display: flex; gap: 4px; margin: 6px 0 16px; }
   .star-picker button {
     background: none; border: none; font-size: 1.6rem; line-height: 1; cursor: pointer; color: var(--line); padding: 2px;
@@ -614,7 +629,8 @@
     return {
       id: r.id, requestId: r.request_id, tutorEmail: r.tutor_email, parentEmail: r.parent_email,
       childName: r.child_name, cohort: r.cohort, date: r.date, start: r.start, end: r.end,
-      completed: !!r.completed, createdAt: r.created_at
+      completed: !!r.completed, createdAt: r.created_at,
+      noteForTutor: r.note_for_tutor || "", noteForStudent: r.note_for_student || ""
     };
   }
   function mapResource(r) {
@@ -637,6 +653,20 @@
   function formatReviewDate(iso) {
     if (!iso) return "";
     return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  // A handful of faded, slowly-drifting "P" favicon marks in the background of a reviews
+  // card — a purely decorative touch, so it's plain CSS (no pointer-tracking) to keep it cheap.
+  function reviewsWatermarkHtml() {
+    var spots = [
+      { top: "6%", left: "8%", size: "2.6rem", delay: "0s" },
+      { top: "58%", left: "82%", size: "3.4rem", delay: "2s" },
+      { top: "30%", left: "48%", size: "2rem", delay: "4s" },
+      { top: "78%", left: "20%", size: "2.2rem", delay: "1s" }
+    ];
+    return '<div class="reviews-watermark">' + spots.map(function (s) {
+      return '<span style="top:' + s.top + ";left:" + s.left + ";font-size:" + s.size + ";animation-delay:" + s.delay + '">P</span>';
+    }).join("") + "</div>";
   }
 
   // Reads a File/Blob into a base64 data: URL, for inline storage (tutor photos) where
@@ -946,10 +976,12 @@
           '<p style="color:var(--muted);font-size:0.9rem">Removed tutor and student logins land here rather than disappearing — a record for audit purposes, with a Restore option.</p>' +
           '<div id="archiveList"></div>'
         ) +
-        accordionCard("Reviews",
-          '<p style="color:var(--muted);font-size:0.9rem">Reviews families leave from their own portal — visible only to Timothy and David.</p>' +
-          '<div id="reviewsList"></div>'
-        )
+        '<div class="card reviews-card">' +
+          reviewsWatermarkHtml() +
+          "<h3>Reviews</h3>" +
+          '<p style="color:var(--muted);font-size:0.9rem">What families are saying — visible only to Timothy and David.</p>' +
+          '<div id="reviewsList"></div>' +
+        "</div>"
       ) : "");
 
     loadTutorCalendarData().then(drawTutorCalendar);
@@ -1476,6 +1508,13 @@
           '<label class="slot-complete"><input type="checkbox" data-tb-complete-id="' + b.id + '"' + (b.completed ? " checked" : "") + '> Completed</label>' +
           '<button class="btn danger small" data-tb-cancel-id="' + b.id + '">Cancel this week</button>' +
         "</div>" +
+        '<div class="lesson-notes">' +
+          (b.noteForTutor ? '<div class="note-view"><span class="note-label">Note from ' + esc(b.childName || "the family") + "’s portal</span><p>" + esc(b.noteForTutor) + "</p></div>" : "") +
+          '<label for="noteStu' + b.id + '">Notes for student/parent</label>' +
+          '<textarea id="noteStu' + b.id + '" rows="2" placeholder="Anything they should know before or after this lesson?">' + esc(b.noteForStudent) + "</textarea>" +
+          '<button class="btn secondary small" data-tb-note-id="' + b.id + '" style="margin-top:6px">Save note</button>' +
+          '<span class="msg" id="noteStuMsg' + b.id + '"></span>' +
+        "</div>" +
       "</div>";
     }).join("") : '<p class="empty">No lessons booked for this date.</p>';
 
@@ -1553,6 +1592,18 @@
         getStore().then(function (s) { return s.deleteBooking(id); })
           .then(loadTutorCalendarData)
           .then(function () { drawTutorCalendar(); renderTutorDateModal(iso); });
+      });
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll("[data-tb-note-id]"), function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-tb-note-id");
+        var ta = document.getElementById("noteStu" + id);
+        var msg = document.getElementById("noteStuMsg" + id);
+        getStore().then(function (s) { return s.updateBooking(id, { noteForStudent: ta.value.trim() }); })
+          .then(loadTutorCalendarData)
+          .then(function () { drawTutorCalendar(); renderTutorDateModal(iso); })
+          .catch(function () { if (msg) { msg.textContent = "Couldn’t save — try again."; msg.className = "msg error"; } });
       });
     });
 
@@ -2052,23 +2103,33 @@
   // (sylBoardTabs/sylUploadArea/sylList), rendered by renderSyllabusSection() below. Founders
   // get an upload box and a Remove button per file (same pattern as the worksheet library's
   // renderResourceTabs/loadResourceList); everyone else gets a view/download-only list.
-  function syllabusCardHtml() {
-    return '<p style="color:var(--muted);font-size:0.9rem">The full week-by-week teaching syllabus — Kent, Bexley, and the combined Kent &amp; Bexley track — each covering Year 4, Year 4 Pt 2, and Year 5 Accelerated.</p>' +
+  function syllabusCardHtml(locked) {
+    var desc = locked
+      ? "The week-by-week teaching syllabus for " + esc((state.user && state.user.childName) || "your child") + "’s course — " + esc(boardLabel((state.user && state.user.board) || "combined")) + ", Year 4, Year 4 Pt 2 and Year 5 Accelerated as it applies to them."
+      : "The full week-by-week teaching syllabus — Kent, Bexley, and the combined Kent &amp; Bexley track — each covering Year 4, Year 4 Pt 2, and Year 5 Accelerated.";
+    return '<p style="color:var(--muted);font-size:0.9rem">' + desc + "</p>" +
       '<div class="cat-tabs" id="sylBoardTabs"></div>' +
       '<div id="sylUploadArea" style="margin-top:12px"></div>' +
       '<div id="sylList" style="margin-top:12px"></div>';
   }
 
-  function renderSyllabusSection(activeBoard) {
+  // `locked` (true on the parent/student dashboard) pins the board to the student's own
+  // exam board and shows it as a plain label rather than a switchable tab — they should
+  // only ever see the syllabus for their own child, not browse every board's syllabus.
+  function renderSyllabusSection(activeBoard, locked) {
     activeBoard = activeBoard || "combined";
     var boardTabsEl = document.getElementById("sylBoardTabs");
     if (!boardTabsEl) return;
-    boardTabsEl.innerHTML = BOARDS.map(function (b) {
-      return '<button class="tab-btn" data-syl-board="' + esc(b.id) + '" aria-selected="' + (b.id === activeBoard) + '">' + esc(b.label) + "</button>";
-    }).join("");
-    Array.prototype.forEach.call(boardTabsEl.querySelectorAll("[data-syl-board]"), function (btn) {
-      btn.addEventListener("click", function () { renderSyllabusSection(btn.getAttribute("data-syl-board")); });
-    });
+    if (locked) {
+      boardTabsEl.innerHTML = '<span class="role-tag small">' + esc(boardLabel(activeBoard)) + "</span>";
+    } else {
+      boardTabsEl.innerHTML = BOARDS.map(function (b) {
+        return '<button class="tab-btn" data-syl-board="' + esc(b.id) + '" aria-selected="' + (b.id === activeBoard) + '">' + esc(b.label) + "</button>";
+      }).join("");
+      Array.prototype.forEach.call(boardTabsEl.querySelectorAll("[data-syl-board]"), function (btn) {
+        btn.addEventListener("click", function () { renderSyllabusSection(btn.getAttribute("data-syl-board"), locked); });
+      });
+    }
 
     var uploadArea = document.getElementById("sylUploadArea");
     if (state.user && state.user.isFounder) {
@@ -2244,8 +2305,8 @@
     app.innerHTML =
       capabilityBanner() +
       '<div class="hello-row">' +
-        '<div class="avatar">' + esc((u.name || "?")[0]) + "</div>" +
-        "<div><h2><span style=\"color:var(--brand)\">Hello</span>, " + esc(u.name) + "!</h2><span class=\"student-badge\">" + esc(cohortLabel(u.cohort)) + " · " + esc(boardLabel(u.board)) + " · " + esc(u.childName) + "</span></div>" +
+        '<div class="avatar">' + esc((u.childName || u.name || "?")[0]) + "</div>" +
+        "<div><h2><span style=\"color:var(--brand)\">Hello</span>, " + esc(u.childName || u.name) + "!</h2><span class=\"role-tag\">Student</span> <span class=\"student-badge\">" + esc(cohortLabel(u.cohort)) + " · " + esc(boardLabel(u.board)) + "</span></div>" +
       "</div>" +
       '<div class="card">' +
         "<h3>Your lessons calendar</h3>" +
@@ -2272,7 +2333,7 @@
         '<div class="cat-tabs" id="resYearTabsP" style="margin-top:-6px"></div>' +
         '<div id="resListP" style="margin-top:12px"></div>'
       ) +
-      accordionCard("Syllabus", syllabusCardHtml()) +
+      accordionCard("Syllabus", syllabusCardHtml(true)) +
       accordionCard("Contact us",
         '<p style="color:var(--muted);font-size:0.9rem">Pick a topic and we’ll open an email to us with your name and details already filled in.</p>' +
         '<div class="preset-grid">' +
@@ -2281,8 +2342,10 @@
           }).join("") +
         "</div>"
       ) +
-      accordionCard("Reviews",
-        '<p style="color:var(--muted);font-size:0.9rem">Tell us how things are going — your review goes straight to Timothy and David.</p>' +
+      '<div class="card reviews-card">' +
+        reviewsWatermarkHtml() +
+        "<h3>Tell us how things are going</h3>" +
+        '<p style="color:var(--muted);font-size:0.9rem">How are you finding PassFrame?</p>' +
         '<label>Rating (optional)</label>' +
         '<div class="star-picker" id="reviewStars">' +
           [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" data-star="' + n + '" aria-label="' + n + ' star' + (n === 1 ? "" : "s") + '">★</button>'; }).join("") +
@@ -2291,14 +2354,14 @@
         '<textarea id="reviewComment" rows="4" placeholder="How has tutoring been going for ' + esc(u.childName || "your child") + '?"></textarea>' +
         '<button class="btn small" id="reviewSend" style="margin-top:12px">Send review</button>' +
         '<div class="msg" id="reviewMsg"></div>' +
-        '<div id="myReviewsList" style="margin-top:20px"></div>'
-      );
+        '<div id="myReviewsList" style="margin-top:20px"></div>' +
+      "</div>";
 
     renderParentRequests();
     loadMyBookings();
     loadParentCalendarData().then(drawParentCalendar);
     renderParentResourceTabs("Lessons", null);
-    renderSyllabusSection("combined");
+    renderSyllabusSection(u.board || "combined", true);
     wireReviewForm();
     loadMyReviewsList();
   }
@@ -2414,6 +2477,14 @@
           joinBtn +
           '<button class="btn danger small" data-pb-cancel-id="' + b.id + '">Cancel this week</button>' +
         "</div>" +
+        '<div class="lesson-notes">' +
+          (b.noteForStudent ? '<div class="note-view"><span class="note-label">Note from ' + esc(tutor ? tutor.name : "your tutor") + "</span><p>" + esc(b.noteForStudent) + "</p></div>" : "") +
+          '<label for="noteTut' + b.id + '">Notes for your tutor</label>' +
+          '<p style="color:var(--muted);font-size:0.78rem;margin:-4px 0 6px">Let them know anything they should be aware of before this lesson.</p>' +
+          '<textarea id="noteTut' + b.id + '" rows="2" placeholder="E.g. how last week’s homework went, topics to revisit, anything on your mind before this lesson.">' + esc(b.noteForTutor) + "</textarea>" +
+          '<button class="btn secondary small" data-pb-note-id="' + b.id + '" style="margin-top:6px">Save note</button>' +
+          '<span class="msg" id="noteTutMsg' + b.id + '"></span>' +
+        "</div>" +
       "</div>";
     }).join("") : '<p class="empty">No lessons booked for this date.</p>';
 
@@ -2428,6 +2499,18 @@
         getStore().then(function (s) { return s.deleteBooking(id); })
           .then(loadParentCalendarData)
           .then(function () { drawParentCalendar(); renderParentDateModal(iso); loadMyBookings(); });
+      });
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll("[data-pb-note-id]"), function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-pb-note-id");
+        var ta = document.getElementById("noteTut" + id);
+        var msg = document.getElementById("noteTutMsg" + id);
+        getStore().then(function (s) { return s.updateBooking(id, { noteForTutor: ta.value.trim() }); })
+          .then(loadParentCalendarData)
+          .then(function () { drawParentCalendar(); renderParentDateModal(iso); })
+          .catch(function () { if (msg) { msg.textContent = "Couldn’t save — try again."; msg.className = "msg error"; } });
       });
     });
   }

@@ -370,7 +370,28 @@ app.patch("/api/bookings/:id", requireAuth, async (c) => {
   }
   const body = await c.req.json();
   const completed = typeof body.completed === "boolean" ? (body.completed ? 1 : 0) : row.completed;
-  await c.env.DB.prepare("UPDATE bookings SET completed = ? WHERE id = ?").bind(completed, id).run();
+
+  // "Notes for Tutor" is written by the family (parent/student login) and read by the
+  // tutor on their own calendar; "Notes for Student" is the reverse. Each side can only
+  // ever write its own note — a family can't plant a "note for student" and vice versa.
+  let noteForTutor = row.note_for_tutor;
+  if (typeof body.noteForTutor === "string") {
+    if (!auth.isFounder && !(auth.role === "parent" && row.parent_email === auth.email)) {
+      return c.json({ error: "Only the family on this booking can leave a note for the tutor." }, 403);
+    }
+    noteForTutor = body.noteForTutor.trim() || null;
+  }
+  let noteForStudent = row.note_for_student;
+  if (typeof body.noteForStudent === "string") {
+    if (!auth.isFounder && !(auth.role === "tutor" && row.tutor_email === auth.email)) {
+      return c.json({ error: "Only the tutor on this booking can leave a note for the student." }, 403);
+    }
+    noteForStudent = body.noteForStudent.trim() || null;
+  }
+
+  await c.env.DB.prepare(
+    "UPDATE bookings SET completed = ?, note_for_tutor = ?, note_for_student = ? WHERE id = ?"
+  ).bind(completed, noteForTutor, noteForStudent, id).run();
   return c.json({ ok: true });
 });
 
