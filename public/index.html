@@ -76,6 +76,10 @@
     top: 0;
     z-index: 40;
   }
+  header.top::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px;
+    background: linear-gradient(90deg, var(--brand), var(--tint), var(--brand)); opacity: 0.85;
+  }
   header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   .brand-mark { font-family: var(--display); font-weight: 800; font-size: 1.3rem; color: var(--brand); text-decoration: none; }
   .brand-mark span { display: block; font-size: 0.55rem; letter-spacing: 0.14em; color: var(--brand); font-weight: 600; }
@@ -188,13 +192,41 @@
   .star-picker button.on { color: var(--brand); }
 
   /* Hero (logged out) */
-  .hero-panel { text-align: center; max-width: 560px; margin: 40px auto 0; }
-  .hero-panel h1 { font-size: clamp(1.8rem, 4vw, 2.3rem); }
-  .hero-panel p { color: var(--muted); }
+  .hero-panel {
+    text-align: center; max-width: 640px; margin: 28px auto 0; position: relative; overflow: hidden;
+    background: linear-gradient(165deg, var(--wash) 0%, var(--bg) 65%);
+    border: 1px solid var(--line); border-radius: 28px;
+    padding: clamp(32px, 6vw, 52px) clamp(20px, 5vw, 44px);
+    box-shadow: 0 24px 60px -28px var(--glow);
+  }
+  .hero-panel::before {
+    content: ""; position: absolute; width: 280px; height: 280px; border-radius: 50%;
+    background: var(--tint); opacity: 0.35; filter: blur(64px); top: -100px; right: -70px; z-index: 0;
+  }
+  .hero-panel > * { position: relative; z-index: 1; }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--tint); color: var(--deep);
+    font-family: var(--display); font-weight: 700; font-size: 0.72rem; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 6px 14px; border-radius: 999px; margin-bottom: 14px;
+  }
+  .hero-panel h1 {
+    font-size: clamp(1.9rem, 4.5vw, 2.5rem);
+    background: linear-gradient(120deg, var(--deep), var(--brand));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero-panel p { color: var(--muted); max-width: 440px; margin-left: auto; margin-right: auto; }
   .hero-panel .btn { margin-top: 12px; padding: 13px 28px; font-size: 1rem; }
   .hero-points { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 36px; text-align: left; }
   @media (max-width: 640px) { .hero-points { grid-template-columns: 1fr; } }
-  .hero-point { background: var(--wash); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+  .hero-point {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 18px 16px;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .hero-point:hover { transform: translateY(-2px); border-color: var(--brand); }
+  .hero-icon {
+    width: 34px; height: 34px; border-radius: 10px; background: var(--wash); color: var(--brand);
+    display: flex; align-items: center; justify-content: center; font-size: 1.05rem; margin-bottom: 10px;
+  }
   .hero-point strong { display: block; font-family: var(--display); font-size: 0.95rem; margin-bottom: 4px; }
   .hero-point span { font-size: 0.85rem; color: var(--muted); }
 
@@ -814,13 +846,14 @@
     app.innerHTML =
       capabilityBanner() +
       '<div class="hero-panel">' +
-        "<h1>PassFrame Portal</h1>" +
-        "<p>For tutors and enrolled families — manage availability, book lessons, and share lesson resources.</p>" +
+        '<span class="hero-eyebrow">11+ Tutoring Portal</span>' +
+        "<h1>Welcome to PassFrame</h1>" +
+        "<p>Your home for booking lessons, staying in touch with your tutor, and keeping every resource in one place.</p>" +
         '<button class="btn" id="heroLoginBtn">Log in</button>' +
         '<div class="hero-points">' +
-          '<div class="hero-point"><strong>Requests</strong><span>Ask a specific tutor for a regular weekly time — they accept or decline.</span></div>' +
-          '<div class="hero-point"><strong>Recurring lessons</strong><span>An accepted request books the same day and time for 4 weeks.</span></div>' +
-          '<div class="hero-point"><strong>Resources</strong><span>Lessons, homework, mark schemes, and more.</span></div>' +
+          '<div class="hero-point"><div class="hero-icon">&#128197;</div><strong>Requests</strong><span>Ask a specific tutor for a regular weekly time.</span></div>' +
+          '<div class="hero-point"><div class="hero-icon">&#128257;</div><strong>Recurring lessons</strong><span>An accepted request books the same day and time for 4 weeks.</span></div>' +
+          '<div class="hero-point"><div class="hero-icon">&#128218;</div><strong>Resources</strong><span>Lessons, homework, mark schemes, and more.</span></div>' +
         "</div>" +
       "</div>";
     document.getElementById("heroLoginBtn").addEventListener("click", function () { openAuthModal(); });
@@ -836,12 +869,15 @@
   }
 
   function authModalHtml() {
-    return "<h2>PassFrame Portal</h2>" +
+    var forgotHref = esc(mailtoHref(PASSFRAME_INBOX, "Password reset request",
+      "Hi PassFrame,\n\nI've forgotten my portal password. Could you reset it for me?\n\nName:\nEmail or username used to log in:"));
+    return "<h2>Welcome back</h2>" +
       '<label for="liEmail">Email or username</label>' +
       '<input type="text" id="liEmail" autocomplete="username" placeholder="you@example.com">' +
       '<label for="liPin">Password</label>' +
       '<input type="password" id="liPin" autocomplete="current-password" placeholder="Enter your password">' +
-      '<button class="btn" id="liGo" style="margin-top:16px;width:100%">Log in</button>' +
+      '<div style="text-align:right;margin-top:6px"><a href="' + forgotHref + '" style="font-size:0.82rem">Forgot your password?</a></div>' +
+      '<button class="btn" id="liGo" style="margin-top:14px;width:100%">Log in</button>' +
       '<div class="msg" id="liMsg"></div>' +
       '<p style="margin-top:16px;font-size:0.82rem;color:var(--muted)">New family? Your tutor sets up your login — ask them for your email and password.</p>';
   }
