@@ -1177,14 +1177,12 @@
   }
 
   function authModalHtml() {
-    var forgotHref = esc(mailtoHref(PASSFRAME_INBOX, "Password reset request",
-      "Hi PassFrame,\n\nI've forgotten my portal password. Could you reset it for me?\n\nName:\nEmail or username used to log in:"));
     return "<h2>Welcome back</h2>" +
       '<label for="liEmail">Email or username</label>' +
       '<input type="text" id="liEmail" autocomplete="username" placeholder="you@example.com">' +
       '<label for="liPin">Password</label>' +
       '<input type="password" id="liPin" autocomplete="current-password" placeholder="Enter your password">' +
-      '<div style="text-align:right;margin-top:6px"><a href="' + forgotHref + '" style="font-size:0.82rem">Forgot your password?</a></div>' +
+      '<div style="text-align:right;margin-top:6px"><a href="#" id="liForgot" style="font-size:0.82rem">Forgot your password?</a></div>' +
       '<button class="btn" id="liGo" style="margin-top:14px;width:100%">Log in</button>' +
       '<div class="msg" id="liMsg"></div>' +
       '<p style="margin-top:16px;font-size:0.82rem;color:var(--muted)">New family? Your tutor sets up your login — ask them for your email and password.</p>';
@@ -1193,6 +1191,110 @@
   function wireAuthModal() {
     document.getElementById("liGo").addEventListener("click", doLogin);
     document.getElementById("liPin").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
+    document.getElementById("liForgot").addEventListener("click", function (e) {
+      e.preventDefault();
+      openModal(forgotPasswordHtml());
+      wireForgotPassword();
+    });
+  }
+
+  // ---------- forgot / reset password ----------
+  // Two steps: request a link (always answers the same way, whether or not the
+  // email has an account, so this can't be used to probe which emails are
+  // registered), then — once they click the emailed link — set a new password.
+  // "Email support" stays alongside the self-service link as a fallback for as
+  // long as the portal's email sending isn't fully set up.
+  function forgotPasswordHtml() {
+    var mailtoFallback = esc(mailtoHref(PASSFRAME_INBOX, "Password reset request",
+      "Hi PassFrame,\n\nI've forgotten my portal password. Could you reset it for me?\n\nName:\nEmail or username used to log in:"));
+    return "<h2>Reset your password</h2>" +
+      '<p style="font-size:0.88rem;color:var(--muted);margin:-6px 0 0">Enter the email you log in with and we’ll send a link to set a new password.</p>' +
+      '<label for="frEmail">Email</label>' +
+      '<input type="text" id="frEmail" autocomplete="username" placeholder="you@example.com">' +
+      '<button class="btn" id="frGo" style="margin-top:14px;width:100%">Send reset link</button>' +
+      '<div class="msg" id="frMsg"></div>' +
+      '<p style="margin-top:16px;font-size:0.82rem"><a href="#" id="frBack">← Back to log in</a></p>' +
+      '<p style="margin-top:10px;font-size:0.82rem;color:var(--muted)">Prefer to ask a person instead? <a href="' + mailtoFallback + '">Email support</a>.</p>';
+  }
+
+  function wireForgotPassword() {
+    document.getElementById("frGo").addEventListener("click", doForgotPassword);
+    document.getElementById("frEmail").addEventListener("keydown", function (e) { if (e.key === "Enter") doForgotPassword(); });
+    document.getElementById("frBack").addEventListener("click", function (e) {
+      e.preventDefault();
+      openModal(authModalHtml());
+      wireAuthModal();
+    });
+  }
+
+  function doForgotPassword() {
+    var email = document.getElementById("frEmail").value.trim().toLowerCase();
+    var msg = document.getElementById("frMsg");
+    msg.textContent = ""; msg.className = "msg";
+    if (!email || !isValidEmail(email)) { msg.textContent = "Enter a valid email."; msg.className = "msg error"; return; }
+    var btn = document.getElementById("frGo");
+    btn.disabled = true;
+    apiFetch("/api/password-reset/request", { method: "POST", body: { email: email } }).then(function () {
+      msg.textContent = "If that email has a portal login, a reset link is on its way — it expires in 30 minutes.";
+      msg.className = "msg";
+    }).catch(function (err) {
+      btn.disabled = false;
+      msg.textContent = err.message || "Couldn’t reach the portal. Try again in a moment.";
+      msg.className = "msg error";
+    });
+  }
+
+  function resetConfirmHtml(token) {
+    return "<h2>Set a new password</h2>" +
+      '<input type="hidden" id="rcToken" value="' + esc(token) + '">' +
+      '<label for="rcPass">New password</label>' +
+      '<input type="password" id="rcPass" autocomplete="new-password" placeholder="At least 8 characters">' +
+      '<label for="rcPass2">Confirm new password</label>' +
+      '<input type="password" id="rcPass2" autocomplete="new-password" placeholder="Retype it">' +
+      '<button class="btn" id="rcGo" style="margin-top:14px;width:100%">Set password</button>' +
+      '<div class="msg" id="rcMsg"></div>';
+  }
+
+  function wireResetConfirm() {
+    document.getElementById("rcGo").addEventListener("click", doResetConfirm);
+    document.getElementById("rcPass2").addEventListener("keydown", function (e) { if (e.key === "Enter") doResetConfirm(); });
+  }
+
+  function doResetConfirm() {
+    var token = document.getElementById("rcToken").value;
+    var pass = document.getElementById("rcPass").value;
+    var pass2 = document.getElementById("rcPass2").value;
+    var msg = document.getElementById("rcMsg");
+    msg.textContent = ""; msg.className = "msg";
+    if (pass.length < 8) { msg.textContent = "Use at least 8 characters."; msg.className = "msg error"; return; }
+    if (pass !== pass2) { msg.textContent = "Those two don’t match."; msg.className = "msg error"; return; }
+    var btn = document.getElementById("rcGo");
+    btn.disabled = true;
+    apiFetch("/api/password-reset/confirm", { method: "POST", body: { token: token, password: pass } }).then(function () {
+      msg.textContent = "Password updated — you can log in with it now.";
+      msg.className = "msg";
+      setTimeout(function () { openModal(authModalHtml()); wireAuthModal(); }, 1400);
+    }).catch(function (err) {
+      btn.disabled = false;
+      msg.textContent = err.message || "That link didn’t work — it may have expired. Request a new one from the login screen.";
+      msg.className = "msg error";
+    });
+  }
+
+  // A reset link lands here as "?resetToken=...". Pop the confirm screen straight
+  // away, then strip the token from the URL so refreshing or sharing the link
+  // (now spent or soon to expire) doesn't resend it anywhere.
+  function checkResetTokenInUrl() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var token = params.get("resetToken");
+      if (!token) return;
+      openModal(resetConfirmHtml(token));
+      wireResetConfirm();
+      params.delete("resetToken");
+      var qs = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (qs ? "?" + qs : "") + window.location.hash);
+    } catch (e) {}
   }
 
   function doLogin() {
@@ -3225,6 +3327,7 @@
 
     wireThemeToggle();
     renderAll();
+    checkResetTokenInUrl();
   }
 
   if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", boot); } else { boot(); }

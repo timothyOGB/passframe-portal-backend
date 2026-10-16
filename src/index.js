@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { hashPin, randomSalt, createSessionToken, verifySessionToken } from "./auth.js";
+import { sendEmail } from "./email.js";
 
 const app = new Hono();
 
@@ -7,6 +8,52 @@ const app = new Hono();
 
 function newId() {
   return crypto.randomUUID();
+}
+
+async function sha256Hex(message) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(message));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// A high-entropy, URL-safe reset token. Only its SHA-256 hash is ever stored
+// (same spirit as pin_hash for passwords) so a database read alone can't be
+// used to reset anyone's password.
+function randomToken() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+// Best-effort: never let a missing/misbehaving email provider break the
+// request/response it's attached to. Runs in the background via waitUntil
+// when available (so the API response doesn't wait on an email round-trip).
+function fireAndForgetEmail(c, args) {
+  const p = sendEmail(c.env, args).catch(() => {});
+  if (c.executionCtx && typeof c.executionCtx.waitUntil === "function") c.executionCtx.waitUntil(p);
+  return p;
+}
+
+// HTML-escapes a value before it goes into an email body built from user-entered
+// text (a child's name, a tutor's display name) — notification emails are the
+// only place this Worker generates HTML, so this mirrors the frontend's esc().
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[ch]));
+}
+
+// A short human-readable line describing when a request's lesson(s) would be,
+// used in notification emails. Accepts either a request DB row (snake_case) or
+// the camelCase body of a just-created request — both shapes are read the same.
+function requestScheduleLine(r) {
+  const kind = r.kind;
+  const firstDate = r.firstDate || r.first_date;
+  const start = r.start || "";
+  const end = r.end || "";
+  const time = start && end ? `${start}–${end}` : start || end || "";
+  if (kind === "oneoff") return firstDate ? `${firstDate}, ${time}` : time;
+  return firstDate ? `Weekly from ${firstDate}, ${time}` : `Weekly, ${time}`;
 }
 
 function userPublic(row) {
@@ -96,6 +143,69 @@ app.get("/api/me", requireAuth, async (c) => {
   const row = await c.env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(auth.email).first();
   if (!row) return c.json({ error: "Account no longer exists." }, 404);
   return c.json({ user: userPublic(row) });
+});
+
+// ---------- password reset (self-service, token-based) ----------
+// Separate from the founder-only "/api/users/:email/password" above, which is for a
+// signed-in founder resetting someone else's password directly. This pair is for
+// someone who's locked out and isn't signed in at all.
+
+const RESET_TOKEN_LIFETIME_MS = 30 * 60 * 1000; // 30 minutes
+
+app.post("/api/password-reset/request", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const email = String(body.email || "").trim().toLowerCase();
+  if (!email) return c.json({ error: "Enter the email you log in with." }, 400);
+
+  // Always respond the same way whether or not the account exists, so this
+  // endpoint can't be used to find out which emails have a login here.
+  const row = await c.env.DB.prepare("SELECT email, name FROM users WHERE email = ?").bind(email).first();
+  if (row) {
+    const token = randomToken();
+    const tokenHash = await sha256Hex(token);
+    await c.env.DB.prepare("DELETE FROM password_resets WHERE email = ?").bind(email).run();
+    await c.env.DB.prepare(
+      "INSERT INTO password_resets (token_hash, email, expires_at, created_at) VALUES (?, ?, ?, ?)"
+    ).bind(tokenHash, email, Date.now() + RESET_TOKEN_LIFETIME_MS, new Date().toISOString()).run();
+
+    const origin = new URL(c.req.url).origin;
+    const link = `${origin}/?resetToken=${token}`;
+    fireAndForgetEmail(c, {
+      to: email,
+      subject: "Reset your PassFrame Portal password",
+      html:
+        `<p>Hi ${row.name || "there"},</p>` +
+        `<p>Use the link below to set a new portal password. It expires in 30 minutes and works once.</p>` +
+        `<p><a href="${link}">${link}</a></p>` +
+        `<p>If you didn't ask for this, you can safely ignore this email — your password hasn't changed.</p>`
+    });
+  }
+
+  return c.json({ ok: true });
+});
+
+app.post("/api/password-reset/confirm", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const token = String(body.token || "").trim();
+  const password = String(body.password || "").trim();
+  if (!token) return c.json({ error: "Missing reset token." }, 400);
+  if (password.length < 8) return c.json({ error: "Enter a password of at least 8 characters." }, 400);
+
+  const tokenHash = await sha256Hex(token);
+  const row = await c.env.DB.prepare("SELECT * FROM password_resets WHERE token_hash = ?").bind(tokenHash).first();
+  if (!row || row.expires_at < Date.now()) {
+    if (row) await c.env.DB.prepare("DELETE FROM password_resets WHERE token_hash = ?").bind(tokenHash).run();
+    return c.json({ error: "That reset link is invalid or has expired. Request a new one." }, 400);
+  }
+
+  const salt = randomSalt();
+  const pinHash = await hashPin(password, salt);
+  await c.env.DB.prepare(
+    "UPDATE users SET pin_hash = ?, pin_salt = ?, failed_attempts = 0, locked_until = NULL WHERE email = ?"
+  ).bind(pinHash, salt, row.email).run();
+  await c.env.DB.prepare("DELETE FROM password_resets WHERE email = ?").bind(row.email).run();
+
+  return c.json({ ok: true });
 });
 
 // ---------- users (founder-managed logins) ----------
@@ -301,6 +411,23 @@ app.post("/api/requests", requireAuth, async (c) => {
     body.kind, body.firstDate || null, body.start || null, body.end || null,
     new Date().toISOString(), body.renewalOf || null
   ).run();
+
+  // Best-effort notification to whoever the request is addressed to — never blocks
+  // or fails the request itself if email isn't configured or the send fails.
+  const recipientEmail = body.direction === "parent-to-tutor" ? body.tutorEmail : body.parentEmail;
+  if (recipientEmail) {
+    const senderRow = await c.env.DB.prepare("SELECT name FROM users WHERE email = ?").bind(auth.email).first();
+    const origin = new URL(c.req.url).origin;
+    fireAndForgetEmail(c, {
+      to: recipientEmail,
+      subject: `New lesson request from ${(senderRow && senderRow.name) || "PassFrame"}${body.childName ? " for " + body.childName : ""}`,
+      html:
+        `<p>${esc((senderRow && senderRow.name) || "Someone")} sent a${body.kind === "oneoff" ? " one-off" : " recurring"} lesson request` +
+        `${body.childName ? ` for ${esc(body.childName)}` : ""}: <strong>${esc(requestScheduleLine(body))}</strong>.</p>` +
+        `<p><a href="${origin}/">Open the portal</a> to accept or decline it.</p>`
+    });
+  }
+
   return c.json({ ok: true, id });
 });
 
@@ -314,8 +441,27 @@ app.patch("/api/requests/:id", requireAuth, async (c) => {
   }
   const body = await c.req.json();
   const status = body.status || row.status;
-  const respondedAt = body.status && body.status !== row.status ? new Date().toISOString() : row.responded_at;
+  const statusChanged = !!body.status && body.status !== row.status;
+  const respondedAt = statusChanged ? new Date().toISOString() : row.responded_at;
   await c.env.DB.prepare("UPDATE requests SET status = ?, responded_at = ? WHERE id = ?").bind(status, respondedAt, id).run();
+
+  // Notify whoever originally sent the request when it's accepted or declined
+  // (not on every patch — only on an actual status change to one of those two).
+  if (statusChanged && (status === "accepted" || status === "declined")) {
+    const senderEmail = row.direction === "parent-to-tutor" ? row.parent_email : row.tutor_email;
+    if (senderEmail) {
+      const origin = new URL(c.req.url).origin;
+      fireAndForgetEmail(c, {
+        to: senderEmail,
+        subject: `Your lesson request was ${status}${row.child_name ? " — " + row.child_name : ""}`,
+        html:
+          `<p>Your ${row.kind === "oneoff" ? "one-off" : "recurring"} lesson request` +
+          `${row.child_name ? ` for ${esc(row.child_name)}` : ""} (<strong>${esc(requestScheduleLine(row))}</strong>) was <strong>${status}</strong>.</p>` +
+          `<p><a href="${origin}/">Open the portal</a> for details.</p>`
+      });
+    }
+  }
+
   return c.json({ ok: true });
 });
 
