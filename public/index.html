@@ -266,17 +266,52 @@
     max-height: 0; opacity: 0; margin-top: 0; overflow: hidden;
     transition: max-height 0.4s ease, opacity 0.35s ease, margin-top 0.4s ease;
   }
-  .hero-point.revealed .hero-explainer { max-height: 150px; opacity: 1; margin-top: 14px; }
-  .hero-anim { display: flex; align-items: center; gap: 8px; height: 30px; font-size: 1.3rem; }
-  .hero-anim span { display: inline-block; opacity: 0.25; transform: scale(0.85); animation: heroFramePulse 2.1s ease-in-out infinite; }
-  .hero-anim span:nth-child(1) { animation-delay: 0s; }
-  .hero-anim span:nth-child(2) { animation-delay: 0.35s; }
-  .hero-anim span:nth-child(3) { animation-delay: 0.7s; }
-  @keyframes heroFramePulse {
-    0%, 100% { opacity: 0.25; transform: scale(0.85); }
-    15% { opacity: 1; transform: scale(1.15); }
-    35% { opacity: 0.4; transform: scale(0.9); }
+  .hero-point.revealed .hero-explainer { max-height: 175px; opacity: 1; margin-top: 14px; }
+  /* A tiny looping storyboard — three staged scenes relay one after another, each a little
+     mockup of real portal UI (chips, an avatar, a tick), walking through what actually
+     happens for that feature rather than a single decorative icon. */
+  .hero-stage {
+    position: relative; height: 78px;
+    background: var(--wash); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
   }
+  .stage-scene {
+    position: absolute; inset: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+    align-content: center; gap: 6px; padding: 6px 10px; opacity: 0;
+    animation: stageCycle 4.8s ease-in-out infinite;
+  }
+  .stage-scene:nth-child(1) { animation-delay: 0s; }
+  .stage-scene:nth-child(2) { animation-delay: 1.6s; }
+  .stage-scene:nth-child(3) { animation-delay: 3.2s; }
+  @keyframes stageCycle {
+    0% { opacity: 0; transform: translateY(6px); }
+    6% { opacity: 1; transform: translateY(0); }
+    28% { opacity: 1; transform: translateY(0); }
+    35% { opacity: 0; transform: translateY(-6px); }
+    100% { opacity: 0; }
+  }
+  /* Scoped under .hero-stage so these beat the plain ".hero-point span" rule used for the
+     card's own description text (a bare ".stage-chip" etc. would otherwise lose that
+     specificity fight and silently fall back to its muted color/size). */
+  .hero-stage .stage-chip {
+    background: var(--bg); border: 1.5px solid var(--line); border-radius: 8px;
+    padding: 4px 9px; font-size: 0.72rem; font-weight: 700; color: var(--muted); font-family: var(--display);
+    white-space: nowrap;
+  }
+  .hero-stage .stage-chip.active { border-color: var(--brand); color: var(--brand-text); background: var(--tint); }
+  .hero-stage .stage-avatar {
+    width: 27px; height: 27px; border-radius: 50%; background: var(--brand); color: var(--on-brand);
+    display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800;
+    font-family: var(--display); flex: none; box-shadow: 0 2px 6px var(--glow);
+  }
+  .hero-stage .stage-arrow { color: var(--brand); font-size: 1.15rem; font-weight: 700; flex: none; }
+  .hero-stage .stage-check {
+    width: 25px; height: 25px; border-radius: 50%; background: var(--ok); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex: none;
+    box-shadow: 0 2px 6px rgba(26, 122, 76, 0.3);
+  }
+  .hero-stage .stage-label { font-size: 0.74rem; color: var(--ink); font-weight: 700; font-family: var(--display); white-space: nowrap; }
+  .hero-stage .stage-dots { display: flex; align-items: center; gap: 5px; flex: none; }
+  .hero-stage .stage-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--brand); flex: none; }
   .hero-explainer p { font-size: 0.8rem; color: var(--muted); margin-top: 8px; line-height: 1.4; }
 
   /* Modal */
@@ -924,7 +959,11 @@
               '<div class="hero-icon">&#128197;</div><strong>Requests</strong><span>Ask a specific tutor for a regular weekly time.</span>' +
               '<div class="hero-progress"><div class="hero-progress-fill"></div></div>' +
               '<div class="hero-explainer">' +
-                '<div class="hero-anim"><span>&#128587;</span><span>&#8594;</span><span>&#127891;</span></div>' +
+                '<div class="hero-stage">' +
+                  '<div class="stage-scene"><span class="stage-chip">Tue 4pm</span><span class="stage-chip active">Wed 5pm</span></div>' +
+                  '<div class="stage-scene"><span class="stage-chip active">Wed 5pm</span><span class="stage-arrow">&#8594;</span><span class="stage-avatar">T</span></div>' +
+                  '<div class="stage-scene"><span class="stage-check">&#10003;</span><span class="stage-label">Lesson booked</span></div>' +
+                "</div>" +
                 "<p>Pick a tutor, suggest a time, and hear back quickly.</p>" +
               "</div>" +
             "</div>" +
@@ -932,7 +971,11 @@
               '<div class="hero-icon">&#128257;</div><strong>Recurring lessons</strong><span>An accepted request books the same day and time for 4 weeks.</span>' +
               '<div class="hero-progress"><div class="hero-progress-fill"></div></div>' +
               '<div class="hero-explainer">' +
-                '<div class="hero-anim"><span>&#128257;</span><span>&#128198;</span><span>&#9989;</span></div>' +
+                '<div class="hero-stage">' +
+                  '<div class="stage-scene"><span class="stage-chip active">Week 1</span><span class="stage-label">Wed, 5pm</span></div>' +
+                  '<div class="stage-scene"><span class="stage-dots"><span class="stage-dot"></span><span class="stage-dot"></span><span class="stage-dot"></span><span class="stage-dot"></span></span><span class="stage-label">Every week</span></div>' +
+                  '<div class="stage-scene"><span class="stage-check">&#10003;</span><span class="stage-label">4 weeks booked</span></div>' +
+                "</div>" +
                 "<p>Once it’s set, the same day and time repeats automatically for 4 weeks.</p>" +
               "</div>" +
             "</div>" +
@@ -940,7 +983,11 @@
               '<div class="hero-icon">&#128218;</div><strong>Resources</strong><span>Lessons, homework, mark schemes, and more.</span>' +
               '<div class="hero-progress"><div class="hero-progress-fill"></div></div>' +
               '<div class="hero-explainer">' +
-                '<div class="hero-anim"><span>&#128216;</span><span>&#128221;</span><span>&#9989;</span></div>' +
+                '<div class="hero-stage">' +
+                  '<div class="stage-scene"><span class="stage-chip active">Today’s lesson</span></div>' +
+                  '<div class="stage-scene"><span class="stage-chip">Homework</span><span class="stage-chip">Mark scheme</span></div>' +
+                  '<div class="stage-scene"><span class="stage-check">&#10003;</span><span class="stage-label">Ready to view</span></div>' +
+                "</div>" +
                 "<p>Lesson notes, homework, and mark schemes land here after every lesson.</p>" +
               "</div>" +
             "</div>" +
