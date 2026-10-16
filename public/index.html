@@ -192,8 +192,20 @@
   .star-picker button.on { color: var(--brand); }
 
   /* Hero (logged out) */
+  .landing-view { position: relative; }
+  .landing-watermark { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .landing-watermark .fav {
+    position: absolute; display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid var(--brand); border-radius: 22%; background: var(--bg); color: var(--brand);
+    font-family: var(--display); font-weight: 800; opacity: 0.07;
+    animation: floatFav 11s ease-in-out infinite;
+  }
+  @keyframes floatFav {
+    0%, 100% { transform: translateY(0) rotate(-5deg); }
+    50% { transform: translateY(-18px) rotate(5deg); }
+  }
   .hero-panel {
-    text-align: center; max-width: 640px; margin: 28px auto 0; position: relative; overflow: hidden;
+    text-align: center; max-width: 640px; margin: 28px auto 0; position: relative; overflow: hidden; z-index: 1;
     background: linear-gradient(165deg, var(--wash) 0%, var(--bg) 65%);
     border: 1px solid var(--line); border-radius: 28px;
     padding: clamp(32px, 6vw, 52px) clamp(20px, 5vw, 44px);
@@ -216,19 +228,57 @@
   }
   .hero-panel p { color: var(--muted); max-width: 440px; margin-left: auto; margin-right: auto; }
   .hero-panel .btn { margin-top: 12px; padding: 13px 28px; font-size: 1rem; }
-  .hero-points { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 36px; text-align: left; }
+  .hero-points { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 36px; text-align: left; align-items: start; }
   @media (max-width: 640px) { .hero-points { grid-template-columns: 1fr; } }
   .hero-point {
+    position: relative;
     background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 18px 16px;
-    transition: transform 0.15s ease, border-color 0.15s ease;
+    transform: translateY(0) scale(1);
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   }
-  .hero-point:hover { transform: translateY(-2px); border-color: var(--brand); }
+  .hero-point:hover {
+    transform: translateY(-3px) scale(1);
+    border-color: var(--brand);
+    box-shadow: 0 10px 24px -14px var(--glow);
+  }
+  .hero-point.revealed {
+    transform: translateY(-3px) scale(1.05);
+    z-index: 3;
+    box-shadow: 0 20px 40px -18px var(--glow);
+  }
   .hero-icon {
     width: 34px; height: 34px; border-radius: 10px; background: var(--wash); color: var(--brand);
     display: flex; align-items: center; justify-content: center; font-size: 1.05rem; margin-bottom: 10px;
   }
   .hero-point strong { display: block; font-family: var(--display); font-size: 0.95rem; margin-bottom: 4px; }
   .hero-point span { font-size: 0.85rem; color: var(--muted); }
+  .hero-progress {
+    height: 3px; margin-top: 12px; border-radius: 999px; background: var(--line);
+    opacity: 0; overflow: hidden; transition: opacity 0.3s ease;
+  }
+  .hero-point:hover .hero-progress { opacity: 1; }
+  .hero-progress-fill {
+    height: 100%; width: 0%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--brand), var(--tint));
+    transition: width 0.25s ease;
+  }
+  .hero-point.charging .hero-progress-fill { width: 100%; transition: width 5s linear; }
+  .hero-explainer {
+    max-height: 0; opacity: 0; margin-top: 0; overflow: hidden;
+    transition: max-height 0.4s ease, opacity 0.35s ease, margin-top 0.4s ease;
+  }
+  .hero-point.revealed .hero-explainer { max-height: 150px; opacity: 1; margin-top: 14px; }
+  .hero-anim { display: flex; align-items: center; gap: 8px; height: 30px; font-size: 1.3rem; }
+  .hero-anim span { display: inline-block; opacity: 0.25; transform: scale(0.85); animation: heroFramePulse 2.1s ease-in-out infinite; }
+  .hero-anim span:nth-child(1) { animation-delay: 0s; }
+  .hero-anim span:nth-child(2) { animation-delay: 0.35s; }
+  .hero-anim span:nth-child(3) { animation-delay: 0.7s; }
+  @keyframes heroFramePulse {
+    0%, 100% { opacity: 0.25; transform: scale(0.85); }
+    15% { opacity: 1; transform: scale(1.15); }
+    35% { opacity: 0.4; transform: scale(0.9); }
+  }
+  .hero-explainer p { font-size: 0.8rem; color: var(--muted); margin-top: 8px; line-height: 1.4; }
 
   /* Modal */
   .modal-backdrop {
@@ -701,6 +751,23 @@
     }).join("") + "</div>";
   }
 
+  // The same idea for the logged-out front page, but each "P" sits inside a rounded
+  // favicon-style frame, drifting faintly behind the hero panel.
+  function landingWatermarkHtml() {
+    var spots = [
+      { top: "4%", left: "6%", box: "2.6rem", font: "1.3rem", delay: "0s" },
+      { top: "12%", left: "90%", box: "3.2rem", font: "1.6rem", delay: "2.5s" },
+      { top: "72%", left: "8%", box: "2.1rem", font: "1.05rem", delay: "5s" },
+      { top: "80%", left: "82%", box: "2.8rem", font: "1.4rem", delay: "1.5s" },
+      { top: "42%", left: "50%", box: "1.8rem", font: "0.9rem", delay: "3.5s" },
+      { top: "58%", left: "95%", box: "2.3rem", font: "1.15rem", delay: "6.5s" }
+    ];
+    return '<div class="landing-watermark">' + spots.map(function (s) {
+      return '<span class="fav" style="top:' + s.top + ";left:" + s.left + ";width:" + s.box + ";height:" + s.box +
+        ";font-size:" + s.font + ";animation-delay:" + s.delay + '">P</span>';
+    }).join("") + "</div>";
+  }
+
   // Reads a File/Blob into a base64 data: URL, for inline storage (tutor photos) where
   // there's no separate upload step to call first.
   function fileToDataUrl(file) {
@@ -845,18 +912,65 @@
   function renderLoggedOutHome() {
     app.innerHTML =
       capabilityBanner() +
-      '<div class="hero-panel">' +
-        '<span class="hero-eyebrow">11+ Tutoring Portal</span>' +
-        "<h1>Welcome to PassFrame</h1>" +
-        "<p>Your home for booking lessons, staying in touch with your tutor, and keeping every resource in one place.</p>" +
-        '<button class="btn" id="heroLoginBtn">Log in</button>' +
-        '<div class="hero-points">' +
-          '<div class="hero-point"><div class="hero-icon">&#128197;</div><strong>Requests</strong><span>Ask a specific tutor for a regular weekly time.</span></div>' +
-          '<div class="hero-point"><div class="hero-icon">&#128257;</div><strong>Recurring lessons</strong><span>An accepted request books the same day and time for 4 weeks.</span></div>' +
-          '<div class="hero-point"><div class="hero-icon">&#128218;</div><strong>Resources</strong><span>Lessons, homework, mark schemes, and more.</span></div>' +
+      '<div class="landing-view">' +
+        landingWatermarkHtml() +
+        '<div class="hero-panel">' +
+          '<span class="hero-eyebrow">11+ Tutoring Portal</span>' +
+          "<h1>Welcome to PassFrame</h1>" +
+          "<p>Your home for booking lessons, staying in touch with your tutor, and keeping every resource in one place.</p>" +
+          '<button class="btn" id="heroLoginBtn">Log in</button>' +
+          '<div class="hero-points">' +
+            '<div class="hero-point">' +
+              '<div class="hero-icon">&#128197;</div><strong>Requests</strong><span>Ask a specific tutor for a regular weekly time.</span>' +
+              '<div class="hero-progress"><div class="hero-progress-fill"></div></div>' +
+              '<div class="hero-explainer">' +
+                '<div class="hero-anim"><span>&#128587;</span><span>&#8594;</span><span>&#127891;</span></div>' +
+                "<p>Pick a tutor, suggest a time, and hear back quickly.</p>" +
+              "</div>" +
+            "</div>" +
+            '<div class="hero-point">' +
+              '<div class="hero-icon">&#128257;</div><strong>Recurring lessons</strong><span>An accepted request books the same day and time for 4 weeks.</span>' +
+              '<div class="hero-progress"><div class="hero-progress-fill"></div></div>' +
+              '<div class="hero-explainer">' +
+                '<div class="hero-anim"><span>&#128257;</span><span>&#128198;</span><span>&#9989;</span></div>' +
+                "<p>Once it’s set, the same day and time repeats automatically for 4 weeks.</p>" +
+              "</div>" +
+            "</div>" +
+            '<div class="hero-point">' +
+              '<div class="hero-icon">&#128218;</div><strong>Resources</strong><span>Lessons, homework, mark schemes, and more.</span>' +
+              '<div class="hero-progress"><div class="hero-progress-fill"></div></div>' +
+              '<div class="hero-explainer">' +
+                '<div class="hero-anim"><span>&#128216;</span><span>&#128221;</span><span>&#9989;</span></div>' +
+                "<p>Lesson notes, homework, and mark schemes land here after every lesson.</p>" +
+              "</div>" +
+            "</div>" +
+          "</div>" +
         "</div>" +
       "</div>";
     document.getElementById("heroLoginBtn").addEventListener("click", function () { openAuthModal(); });
+    wireHeroPoints();
+  }
+
+  // Hover a hero-point card and its progress bar fades in below the text; hold the hover for
+  // the full 5 seconds and the card settles into its "revealed" state — slightly bigger, with
+  // a short looping icon animation explaining what the feature does. Moving away at any point
+  // resets it, ready to play again.
+  function wireHeroPoints() {
+    var points = document.querySelectorAll(".hero-point");
+    for (var i = 0; i < points.length; i++) {
+      (function (el) {
+        var timer = null;
+        el.addEventListener("mouseenter", function () {
+          el.classList.add("charging");
+          timer = setTimeout(function () { el.classList.add("revealed"); }, 5000);
+        });
+        el.addEventListener("mouseleave", function () {
+          el.classList.remove("charging");
+          el.classList.remove("revealed");
+          if (timer) { clearTimeout(timer); timer = null; }
+        });
+      })(points[i]);
+    }
   }
 
   // ---------- AUTH MODAL ----------
