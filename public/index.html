@@ -196,12 +196,15 @@
   .landing-watermark { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
   .landing-watermark .fav {
     position: absolute; display: block; border-radius: 22%;
-    animation: floatFav 11s ease-in-out infinite;
+    animation: floatFav 7.5s ease-in-out infinite;
     filter: drop-shadow(0 6px 14px var(--glow));
   }
   @keyframes floatFav {
-    0%, 100% { transform: translateY(0) rotate(-5deg); }
-    50% { transform: translateY(-18px) rotate(5deg); }
+    0%   { transform: translate(0, 0) rotate(-5deg); }
+    25%  { transform: translate(9px, -17px) rotate(3deg); }
+    50%  { transform: translate(-7px, -29px) rotate(-4deg); }
+    75%  { transform: translate(-11px, -11px) rotate(4deg); }
+    100% { transform: translate(0, 0) rotate(-5deg); }
   }
   .hero-panel {
     text-align: center; max-width: 640px; margin: 28px auto 0; position: relative; overflow: hidden; z-index: 1;
@@ -790,12 +793,18 @@
   // faintly behind the hero panel.
   function landingWatermarkHtml() {
     var spots = [
-      { top: "3%", left: "5%", box: "3.4rem", opacity: "0.16", delay: "0s" },
-      { top: "10%", left: "89%", box: "4.4rem", opacity: "0.14", delay: "2.5s" },
-      { top: "70%", left: "6%", box: "2.8rem", opacity: "0.18", delay: "5s" },
-      { top: "78%", left: "81%", box: "3.8rem", opacity: "0.15", delay: "1.5s" },
-      { top: "40%", left: "2%", box: "2.4rem", opacity: "0.13", delay: "3.5s" },
-      { top: "55%", left: "93%", box: "3.1rem", opacity: "0.17", delay: "6.5s" }
+      { top: "2%", left: "4%", box: "3.2rem", opacity: "0.16", delay: "0s" },
+      { top: "9%", left: "90%", box: "4.4rem", opacity: "0.13", delay: "1.1s" },
+      { top: "20%", left: "13%", box: "2rem", opacity: "0.18", delay: "2.2s" },
+      { top: "27%", left: "96%", box: "2.6rem", opacity: "0.15", delay: "0.4s" },
+      { top: "40%", left: "1%", box: "2.4rem", opacity: "0.13", delay: "3.3s" },
+      { top: "47%", left: "88%", box: "3.6rem", opacity: "0.17", delay: "4.6s" },
+      { top: "60%", left: "9%", box: "2.9rem", opacity: "0.14", delay: "1.8s" },
+      { top: "68%", left: "94%", box: "2.1rem", opacity: "0.19", delay: "5.5s" },
+      { top: "80%", left: "5%", box: "3.8rem", opacity: "0.12", delay: "2.9s" },
+      { top: "88%", left: "84%", box: "2.5rem", opacity: "0.16", delay: "6.2s" },
+      { top: "55%", left: "0%", box: "1.9rem", opacity: "0.15", delay: "4s" },
+      { top: "15%", left: "98%", box: "2rem", opacity: "0.14", delay: "7s" }
     ];
     return '<div class="landing-watermark">' + spots.map(function (s) {
       return '<img class="fav" src="/apple-touch-icon.png" alt="" style="top:' + s.top + ";left:" + s.left +
@@ -998,26 +1007,66 @@
     wireHeroPoints();
   }
 
-  // Hover a hero-point card and its progress bar fades in below the text; hold the hover for
-  // the full 4 seconds and the card settles into its "revealed" state — slightly bigger, with
-  // a short looping animation explaining what the feature does. Moving away at any point
-  // resets it, ready to play again.
+  // The three hero-point cards play themselves, one at a time, with no hover needed: a
+  // progress bar fills below each card in turn over 4 seconds, then it settles into its
+  // "revealed" state — slightly bigger, with its short looping storyboard — holds for a
+  // few seconds, and hands off to the next card. Hovering a card jumps straight to it
+  // (pausing the rotation); moving away resumes the rotation from the next one.
+  //
+  // "gen" is a cancellation token: every reset (from a hover, or just moving to the next
+  // card) bumps it, so any setTimeout callback still in flight from the previous run sees
+  // a stale value and quietly does nothing instead of fighting the new state.
   function wireHeroPoints() {
     var points = document.querySelectorAll(".hero-point");
+    if (!points.length) return;
+    var CHARGE_MS = 4000;
+    var HOLD_MS = 5000;
+    var gen = 0;
+
+    function clearAll() {
+      for (var i = 0; i < points.length; i++) points[i].classList.remove("charging", "revealed");
+    }
+
+    function playFrom(index, myGen) {
+      if (myGen !== gen) return;
+      clearAll();
+      var el = points[((index % points.length) + points.length) % points.length];
+      el.classList.add("charging");
+      setTimeout(function () {
+        if (myGen !== gen) return;
+        el.classList.add("revealed");
+        setTimeout(function () {
+          if (myGen !== gen) return;
+          playFrom(index + 1, myGen);
+        }, HOLD_MS);
+      }, CHARGE_MS);
+    }
+
+    function startAutoplay(fromIndex) {
+      gen++;
+      playFrom(fromIndex, gen);
+    }
+
     for (var i = 0; i < points.length; i++) {
-      (function (el) {
-        var timer = null;
+      (function (el, idx) {
         el.addEventListener("mouseenter", function () {
+          gen++;
+          var myGen = gen;
+          clearAll();
           el.classList.add("charging");
-          timer = setTimeout(function () { el.classList.add("revealed"); }, 4000);
+          setTimeout(function () {
+            if (myGen !== gen) return;
+            el.classList.add("revealed");
+          }, CHARGE_MS);
         });
         el.addEventListener("mouseleave", function () {
-          el.classList.remove("charging");
-          el.classList.remove("revealed");
-          if (timer) { clearTimeout(timer); timer = null; }
+          clearAll();
+          startAutoplay(idx + 1);
         });
-      })(points[i]);
+      })(points[i], i);
     }
+
+    startAutoplay(0);
   }
 
   // ---------- AUTH MODAL ----------
