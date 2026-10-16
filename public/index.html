@@ -430,6 +430,25 @@
   .day-slot-main span { color: var(--muted); font-size: 0.78rem; }
   .day-slot-item.completed { border-color: var(--ok); background: var(--ok-wash); }
   .day-slot-actions { display: flex; align-items: center; gap: 10px; flex: none; }
+  /* A small inline verdict on an incoming request: does it overlap with marked
+     availability? Shown so accepting doesn't require a side-trip to the calendar. */
+  .avail-badge {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 0.74rem; font-weight: 600;
+    padding: 2px 8px; border-radius: 999px; margin-top: 4px;
+  }
+  .avail-badge.yes { color: var(--ok); background: var(--ok-wash); }
+  .avail-badge.no { color: var(--warn); background: var(--warn-wash); }
+  .avail-badge-row { margin-top: 4px; }
+
+  /* Lesson reminder banner: a brief, dismissible-feeling strip at the top of a
+     dashboard when the signed-in person's next lesson is close. */
+  .reminder-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    background: var(--glow); border: 1px solid var(--brand); border-radius: 14px;
+    padding: 12px 16px; margin-bottom: 16px; font-size: 0.88rem;
+  }
+  .reminder-banner strong { font-family: var(--display); color: var(--brand-text); }
+  .reminder-banner .reminder-actions { display: flex; gap: 8px; flex: none; }
   .slot-complete { display: flex; align-items: center; gap: 5px; font-size: 0.78rem; color: var(--muted); cursor: pointer; white-space: nowrap; }
   .slot-complete input { width: 15px; height: 15px; margin: 0; }
   .checkbox-row { display: flex; align-items: center; gap: 9px; margin: 16px 0 0; cursor: pointer; }
@@ -1071,10 +1090,70 @@
   }
 
   function renderAll() {
+    if (reminderTickerId) { clearInterval(reminderTickerId); reminderTickerId = null; }
     renderTopActions();
     if (!state.user) { renderLoggedOutHome(); }
     else if (state.user.role === "tutor") { renderTutorDashboard(); }
     else { renderParentDashboard(); }
+  }
+
+  // ---------- lesson reminder banner ----------
+  // A top-of-dashboard strip for when the signed-in person's next lesson is imminent
+  // (already started, or starting within the next couple of hours). Reuses whatever
+  // bookings data the calendar already loaded — no extra API call — and re-checks
+  // once a minute so the countdown stays roughly accurate while the tab stays open.
+  var reminderTickerId = null;
+  var REMINDER_WINDOW_MS = 2 * 60 * 60 * 1000;
+
+  function nextUpcomingBooking(bookings) {
+    var now = new Date();
+    var upcoming = (bookings || []).filter(function (b) {
+      return new Date(b.date + "T" + (b.end || b.start)) >= now;
+    }).sort(function (a, b) { return (a.date + a.start).localeCompare(b.date + b.start); });
+    return upcoming[0] || null;
+  }
+
+  function formatCountdown(ms) {
+    var mins = Math.round(ms / 60000);
+    if (mins <= 1) return "under a minute";
+    if (mins < 60) return mins + " minute" + (mins === 1 ? "" : "s");
+    var hrs = Math.floor(mins / 60), rem = mins % 60;
+    return hrs + "h" + (rem ? " " + rem + "m" : "");
+  }
+
+  function reminderBannerHtml(text, teamsLink) {
+    var joinBtn = teamsLink
+      ? '<div class="reminder-actions"><a class="btn small" href="' + esc(teamsLink) + '" target="_blank" rel="noopener">Join Teams call</a></div>'
+      : "";
+    return '<div class="reminder-banner"><span>📅 <strong>' + text + "</strong></span>" + joinBtn + "</div>";
+  }
+
+  function updateLessonReminderBanner(containerId, booking, opts) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    if (!booking) { el.innerHTML = ""; return; }
+    opts = opts || {};
+    var now = new Date();
+    var start = new Date(booking.date + "T" + booking.start);
+    var end = new Date(booking.date + "T" + booking.end);
+    var withWhom = opts.withLabel ? ", with " + esc(opts.withLabel) : "";
+    var timeRange = esc(booking.start) + "–" + esc(booking.end);
+
+    if (now >= start && now <= end) {
+      el.innerHTML = reminderBannerHtml("Happening now" + withWhom + " (" + timeRange + ")", opts.teamsLink);
+    } else if (start - now > 0 && start - now <= REMINDER_WINDOW_MS) {
+      el.innerHTML = reminderBannerHtml("Starting in " + formatCountdown(start - now) + withWhom + " (" + timeRange + ")", opts.teamsLink);
+    } else {
+      el.innerHTML = "";
+    }
+  }
+
+  // Clears any previous ticker (so switching dashboards or flipping calendar months
+  // never stacks intervals), renders once immediately, then every 60s after that.
+  function scheduleReminderTicker(computeAndRender) {
+    if (reminderTickerId) clearInterval(reminderTickerId);
+    computeAndRender();
+    reminderTickerId = setInterval(computeAndRender, 60000);
   }
 
   // No more capability-availability concept now that this is a real site talking to a
@@ -1331,6 +1410,7 @@
     tutorCalMonth = now.getMonth();
     app.innerHTML =
       capabilityBanner() +
+      '<div id="lessonReminder"></div>' +
       '<div class="hello-row">' +
         '<div class="avatar">' + (u.photoDataUrl ? '<img src="' + u.photoDataUrl + '" alt="">' : esc((u.name || "?")[0])) + "</div>" +
         "<div><h2><span style=\"color:var(--brand)\">Hello</span>, " + esc(u.name) + "!</h2>" + (u.isFounder ? '<span class="founder-badge">Founder</span>' : '<span class="role-tag">Tutor</span>') + "</div>" +
@@ -1938,6 +2018,14 @@
     }
     var nextEl = document.getElementById("tutorNextLesson");
     if (nextEl) nextEl.textContent = nextLessonLabel(tutorBookingsCache);
+
+    scheduleReminderTicker(function () {
+      var nextBooking = nextUpcomingBooking(tutorBookingsCache);
+      updateLessonReminderBanner("lessonReminder", nextBooking, {
+        withLabel: nextBooking ? nextBooking.childName : "",
+        teamsLink: state.user.teamsLink || null
+      });
+    });
   }
 
   function renderTutorDateModal(iso) {
@@ -2131,6 +2219,29 @@
       : "Every " + weekdayName(r.firstDate) + ", " + r.start + "–" + r.end + " · starting " + formatDateLabel(r.firstDate);
   }
 
+  // Does the tutor have marked availability that covers this request's time? Availability
+  // is per-date, so for a recurring request this only ever checks the first lesson date —
+  // still useful as a quick sanity check, just noted as such in the badge text below.
+  function timeRangesOverlap(aStart, aEnd, bStart, bEnd) { return aStart < bEnd && bStart < aEnd; }
+
+  function matchingAvailabilityFor(allAvailability, r) {
+    return allAvailability.filter(function (a) {
+      return a.tutorEmail === state.user.email && a.date === r.firstDate &&
+        (!a.studentEmail || a.studentEmail === r.parentEmail) &&
+        timeRangesOverlap(a.start, a.end, r.start, r.end);
+    });
+  }
+
+  function availabilityBadgeHtml(allAvailability, r) {
+    var matches = matchingAvailabilityFor(allAvailability, r);
+    var dateNote = r.kind === "recurring" ? " on the first date" : "";
+    if (matches.length) {
+      var times = matches.map(function (m) { return esc(m.start) + "–" + esc(m.end); }).join(", ");
+      return '<div class="avail-badge-row"><span class="avail-badge yes">✓ You’re marked free' + dateNote + " (" + times + ")</span></div>";
+    }
+    return '<div class="avail-badge-row"><span class="avail-badge no">No marked availability' + dateNote + " — check your calendar</span></div>";
+  }
+
   function renderTutorRequests(composeKind) {
     composeKind = composeKind === "oneoff" ? "oneoff" : "recurring";
     var el = document.getElementById("tutorRequests");
@@ -2139,9 +2250,10 @@
     Promise.all([
       getStore().then(function (s) { return s ? s.listRequests() : []; }),
       getStore().then(function (s) { return s ? s.listBookings() : []; }),
-      getStore().then(function (s) { return s ? s.listUsers() : []; })
+      getStore().then(function (s) { return s ? s.listUsers() : []; }),
+      getStore().then(function (s) { return s ? s.listAvailability() : []; })
     ]).then(function (res) {
-      var allRequests = res[0], allBookings = res[1], allUsers = res[2];
+      var allRequests = res[0], allBookings = res[1], allUsers = res[2], allAvailability = res[3];
       var families = allUsers.filter(function (u) { return u.role === "parent"; })
         .sort(function (a, b) { return (a.childName || "").localeCompare(b.childName || ""); });
       tutorStudentsCache = families;
@@ -2159,7 +2271,9 @@
 
       var incomingHtml = incoming.length ? incoming.map(function (r) {
         return '<div class="day-slot-item"><div class="day-slot-main"><strong>' + esc(r.childName) + " (" + esc(cohortLabel(r.cohort)) + ")</strong>" +
-          '<span>' + esc(requestScheduleText(r)) + "</span></div>" +
+          '<span>' + esc(requestScheduleText(r)) + "</span>" +
+          availabilityBadgeHtml(allAvailability, r) +
+          "</div>" +
           '<div class="day-slot-actions">' +
             '<button class="btn small" data-accept-req="' + r.id + '">Accept</button>' +
             '<button class="btn danger small" data-decline-req="' + r.id + '">Decline</button>' +
@@ -2803,6 +2917,7 @@
     parentCalMonth = now.getMonth();
     app.innerHTML =
       capabilityBanner() +
+      '<div id="lessonReminder"></div>' +
       '<div class="hello-row">' +
         '<div class="avatar">' + esc((u.childName || u.name || "?")[0]) + "</div>" +
         "<div><h2><span style=\"color:var(--brand)\">Hello</span>, " + esc(u.childName || u.name) + "!</h2><span class=\"role-tag\">Student</span> <span class=\"student-badge\">" + esc(cohortLabel(u.cohort)) + " · " + esc(boardLabel(u.board)) + "</span></div>" +
@@ -2961,6 +3076,15 @@
     }
     var nextEl = document.getElementById("parentNextLesson");
     if (nextEl) nextEl.textContent = parentNextLessonLabel(parentBookingsCache);
+
+    scheduleReminderTicker(function () {
+      var nextBooking = nextUpcomingBooking(parentBookingsCache);
+      var tutorForNext = nextBooking ? tutorByEmailForParent(nextBooking.tutorEmail) : null;
+      updateLessonReminderBanner("lessonReminder", nextBooking, {
+        withLabel: tutorForNext ? tutorForNext.name : "your tutor",
+        teamsLink: tutorForNext ? tutorForNext.teamsLink : null
+      });
+    });
   }
 
   function renderParentDateModal(iso) {
