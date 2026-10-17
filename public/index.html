@@ -1244,9 +1244,6 @@
             '<div><label for="leadBoard">Exam board</label><select id="leadBoard"><option value="">Not sure yet</option>' +
               BOARDS.map(function (b) { return '<option value="' + b.id + '">' + b.label + "</option>"; }).join("") + "</select></div>" +
           "</div>" +
-          '<label for="leadSubject">Subject</label>' +
-          '<select id="leadSubject"><option value="">Not sure yet</option>' +
-            RES_SUBJECTS.map(function (s) { return '<option value="' + s + '">' + s + "</option>"; }).join("") + "</select>" +
           '<label for="leadMessage">Anything else? (optional)</label>' +
           '<textarea id="leadMessage" rows="3"></textarea>' +
           // Honeypot — invisible and unreachable by tab for a real visitor, but a plain
@@ -1282,7 +1279,6 @@
           childName: document.getElementById("leadChildName").value.trim(),
           cohort: document.getElementById("leadCohort").value,
           board: document.getElementById("leadBoard").value,
-          subject: document.getElementById("leadSubject").value,
           message: document.getElementById("leadMessage").value.trim(),
           website: document.getElementById("leadWebsite").value
         });
@@ -1290,7 +1286,7 @@
         btn.disabled = false;
         msg.textContent = "Thanks — we’ll be in touch soon.";
         msg.className = "msg";
-        ["leadParentName", "leadEmail", "leadPhone", "leadChildName", "leadCohort", "leadBoard", "leadSubject", "leadMessage"].forEach(function (id) {
+        ["leadParentName", "leadEmail", "leadPhone", "leadChildName", "leadCohort", "leadBoard", "leadMessage"].forEach(function (id) {
           var el = document.getElementById(id);
           if (el) el.value = "";
         });
