@@ -141,6 +141,7 @@
     padding: 24px clamp(18px, 4vw, 32px); margin-bottom: 20px;
   }
   .card h3 { font-size: 1.05rem; }
+  .lead-card { max-width: 480px; margin: 28px auto 20px; }
   label { display: block; font-family: var(--display); font-weight: 600; font-size: 0.85rem; margin: 14px 0 6px; }
   label:first-child { margin-top: 0; }
   input, select, textarea {
@@ -865,6 +866,12 @@
   function mapReview(r) {
     return { id: r.id, parentEmail: r.parent_email, rating: r.rating, comment: r.comment, createdAt: r.created_at };
   }
+  function mapLead(r) {
+    return {
+      id: r.id, parentName: r.parent_name, email: r.email, phone: r.phone, childName: r.child_name,
+      cohort: r.cohort, board: r.board, subject: r.subject, message: r.message, status: r.status, createdAt: r.created_at
+    };
+  }
 
   // ---------- reviews helpers ----------
   function starsHtml(rating) {
@@ -1049,7 +1056,14 @@
         return apiFetch("/api/reviews/mine").then(function (res) { return (res.reviews || []).map(mapReview); });
       },
       addReview: function (data) { return apiFetch("/api/reviews", { method: "POST", body: data }); },
-      deleteReview: function (id) { return apiFetch("/api/reviews/" + encodeURIComponent(id), { method: "DELETE" }); }
+      deleteReview: function (id) { return apiFetch("/api/reviews/" + encodeURIComponent(id), { method: "DELETE" }); },
+      // submitLead works whether or not anyone's signed in — the landing page form that
+      // calls it has no session at all, and apiFetch only attaches a token when one exists.
+      submitLead: function (data) { return apiFetch("/api/leads", { method: "POST", body: data }); },
+      listLeads: function () {
+        return apiFetch("/api/leads").then(function (res) { return (res.leads || []).map(mapLead); });
+      },
+      updateLeadStatus: function (id, status) { return apiFetch("/api/leads/" + encodeURIComponent(id), { method: "PATCH", body: { status: status } }); }
     };
   }
 
@@ -1213,10 +1227,79 @@
             "</div>" +
           "</div>" +
         "</div>" +
+        '<div class="card lead-card">' +
+          "<h3>New family? Request a consultation</h3>" +
+          '<p style="color:var(--muted);font-size:0.9rem">Tell us a bit about your child and we’ll be in touch to set up your login — no account needed to ask.</p>' +
+          '<label for="leadParentName">Your name</label>' +
+          '<input type="text" id="leadParentName" autocomplete="name">' +
+          '<label for="leadEmail">Email</label>' +
+          '<input type="email" id="leadEmail" autocomplete="email">' +
+          '<label for="leadPhone">Phone (optional)</label>' +
+          '<input type="tel" id="leadPhone" autocomplete="tel">' +
+          '<label for="leadChildName">Child’s name (optional)</label>' +
+          '<input type="text" id="leadChildName">' +
+          '<div class="field-row">' +
+            '<div><label for="leadCohort">Year group</label><select id="leadCohort"><option value="">Not sure yet</option>' +
+              COHORTS.map(function (c) { return '<option value="' + c.id + '">' + c.label + "</option>"; }).join("") + "</select></div>" +
+            '<div><label for="leadBoard">Exam board</label><select id="leadBoard"><option value="">Not sure yet</option>' +
+              BOARDS.map(function (b) { return '<option value="' + b.id + '">' + b.label + "</option>"; }).join("") + "</select></div>" +
+          "</div>" +
+          '<label for="leadSubject">Subject</label>' +
+          '<select id="leadSubject"><option value="">Not sure yet</option>' +
+            RES_SUBJECTS.map(function (s) { return '<option value="' + s + '">' + s + "</option>"; }).join("") + "</select>" +
+          '<label for="leadMessage">Anything else? (optional)</label>' +
+          '<textarea id="leadMessage" rows="3"></textarea>' +
+          // Honeypot — invisible and unreachable by tab for a real visitor, but a plain
+          // text input a form-filling bot will happily fill in. Server silently drops it.
+          '<input type="text" id="leadWebsite" name="website" autocomplete="off" tabindex="-1" ' +
+            'style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" aria-hidden="true">' +
+          '<button class="btn" id="leadSend" style="margin-top:16px;width:100%">Send enquiry</button>' +
+          '<div class="msg" id="leadMsg"></div>' +
+        "</div>" +
       "</div>";
     document.getElementById("heroLoginBtn").addEventListener("click", function () { openAuthModal(); });
     wireHeroPoints();
     wireLandingWatermark();
+    wireLeadForm();
+  }
+
+  function wireLeadForm() {
+    var btn = document.getElementById("leadSend");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      var msg = document.getElementById("leadMsg");
+      msg.textContent = ""; msg.className = "msg";
+      var parentName = document.getElementById("leadParentName").value.trim();
+      var email = document.getElementById("leadEmail").value.trim().toLowerCase();
+      if (!parentName) { msg.textContent = "Enter your name."; msg.className = "msg error"; return; }
+      if (!email || !isValidEmail(email)) { msg.textContent = "Enter a valid email."; msg.className = "msg error"; return; }
+      btn.disabled = true;
+      getStore().then(function (s) {
+        return s.submitLead({
+          parentName: parentName,
+          email: email,
+          phone: document.getElementById("leadPhone").value.trim(),
+          childName: document.getElementById("leadChildName").value.trim(),
+          cohort: document.getElementById("leadCohort").value,
+          board: document.getElementById("leadBoard").value,
+          subject: document.getElementById("leadSubject").value,
+          message: document.getElementById("leadMessage").value.trim(),
+          website: document.getElementById("leadWebsite").value
+        });
+      }).then(function () {
+        btn.disabled = false;
+        msg.textContent = "Thanks — we’ll be in touch soon.";
+        msg.className = "msg";
+        ["leadParentName", "leadEmail", "leadPhone", "leadChildName", "leadCohort", "leadBoard", "leadSubject", "leadMessage"].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) el.value = "";
+        });
+      }).catch(function (err) {
+        btn.disabled = false;
+        msg.textContent = err.message || "Couldn’t send that — try again in a moment.";
+        msg.className = "msg error";
+      });
+    });
   }
 
   // The three hero-point cards play themselves, one at a time, on a loop — no hover, no
@@ -1488,6 +1571,10 @@
           '<p style="color:var(--muted);font-size:0.9rem">See any tutor’s availability calendar, completed hours, and which students they’ve tutored.</p>' +
           '<button class="btn secondary" id="openViewTutors">View tutors</button>'
         ) +
+        accordionCard("Leads",
+          '<p style="color:var(--muted);font-size:0.9rem">Enquiries from the "Request a consultation" form on the landing page.</p>' +
+          '<div id="leadsList"></div>'
+        ) +
         accordionCard("Email anyone",
           '<p style="color:var(--muted);font-size:0.9rem">Opens your email app with the message ready to send. We’ll CC ' + esc(PASSFRAME_INBOX) + ' automatically so it’s kept on file.</p>' +
           '<label for="mailTo">To</label>' +
@@ -1525,7 +1612,50 @@
       loadArchiveList();
       document.getElementById("openViewTutors").addEventListener("click", openViewTutorsModal);
       loadReviewsList();
+      loadLeadsList();
     }
+  }
+
+  // Founder-only inbox for the landing page's "Request a consultation" form. A lead
+  // starts "new"; marking it contacted or archiving it is just a status update —
+  // nothing here creates the actual student login, that's still done by hand above
+  // once the founder has been in touch.
+  function leadStatusLabel(status) { return status === "contacted" ? "Contacted" : status === "archived" ? "Archived" : "New"; }
+
+  function loadLeadsList() {
+    var listEl = document.getElementById("leadsList");
+    if (!listEl) return;
+    listEl.innerHTML = skeletonListHtml(3);
+    getStore().then(function (s) { return s ? s.listLeads() : []; }).then(function (leads) {
+      if (!leads.length) { listEl.innerHTML = '<p class="empty">No enquiries yet.</p>'; return; }
+      listEl.innerHTML = leads.map(function (l) {
+        var details = [
+          l.childName ? "for " + esc(l.childName) : null,
+          l.cohort ? esc(cohortLabel(l.cohort)) : null,
+          l.board ? esc(boardLabel(l.board)) : null,
+          l.subject ? esc(l.subject) : null
+        ].filter(Boolean).join(" · ");
+        var contactLine = esc(l.email) + (l.phone ? " · " + esc(l.phone) : "");
+        var msgLine = l.message ? '<div style="margin-top:6px;font-size:0.82rem">' + esc(l.message) + "</div>" : "";
+        var actions = l.status === "new"
+          ? '<button class="btn small" data-lead-contacted="' + l.id + '">Mark contacted</button><button class="btn secondary small" data-lead-archive="' + l.id + '">Archive</button>'
+          : (l.status === "contacted" ? '<button class="btn secondary small" data-lead-archive="' + l.id + '">Archive</button>' : "");
+        return '<div class="day-slot-item"><div class="day-slot-main"><strong>' + esc(l.parentName) + (details ? " (" + details + ")" : "") + "</strong>" +
+          '<span>' + contactLine + " · " + leadStatusLabel(l.status) + "</span>" + msgLine +
+          "</div>" +
+          '<div class="day-slot-actions">' + actions + "</div></div>";
+      }).join("");
+      Array.prototype.forEach.call(listEl.querySelectorAll("[data-lead-contacted]"), function (btn) {
+        btn.addEventListener("click", function () {
+          getStore().then(function (s) { return s.updateLeadStatus(btn.getAttribute("data-lead-contacted"), "contacted"); }).then(loadLeadsList);
+        });
+      });
+      Array.prototype.forEach.call(listEl.querySelectorAll("[data-lead-archive]"), function (btn) {
+        btn.addEventListener("click", function () {
+          getStore().then(function (s) { return s.updateLeadStatus(btn.getAttribute("data-lead-archive"), "archived"); }).then(loadLeadsList);
+        });
+      });
+    }).catch(function () { listEl.innerHTML = errorStateHtml("Couldn’t load enquiries."); });
   }
 
   // Comment-style feed of every review a family has left, visible only on Timothy's
@@ -2957,6 +3087,12 @@
           }).join("") +
         "</div>"
       ) +
+      accordionCard("Your data",
+        '<p style="color:var(--muted);font-size:0.9rem">Since this portal holds information about ' + esc(u.childName || "your child") +
+          ', you can download everything attached to your account whenever you like — your profile, lesson history, requests, and reviews — as a single file.</p>' +
+        '<button class="btn secondary" id="dataExportBtn">Download my data</button>' +
+        '<div class="msg" id="dataExportMsg"></div>'
+      ) +
       '<div class="card reviews-card">' +
         reviewsWatermarkHtml() +
         "<h3>Tell us how things are going</h3>" +
@@ -2979,6 +3115,49 @@
     renderSyllabusSection(u.board || "combined", true);
     wireReviewForm();
     loadMyReviewsList();
+    wireDataExport();
+  }
+
+  // A self-service copy of everything the portal holds under this account — profile,
+  // lesson history, requests, and reviews — as one JSON file the family can keep.
+  // Every call here already comes back scoped to the signed-in parent by the API
+  // itself, so there's no separate filtering to get right (or wrong) client-side.
+  function wireDataExport() {
+    var btn = document.getElementById("dataExportBtn");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      var msg = document.getElementById("dataExportMsg");
+      msg.textContent = ""; msg.className = "msg";
+      btn.disabled = true;
+      Promise.all([
+        apiFetch("/api/me"),
+        getStore().then(function (s) { return s ? s.listBookings() : []; }),
+        getStore().then(function (s) { return s ? s.listRequests() : []; }),
+        getStore().then(function (s) { return s ? s.listMyReviews() : []; })
+      ]).then(function (res) {
+        var payload = {
+          exportedAt: new Date().toISOString(),
+          profile: res[0].user,
+          bookings: res[1],
+          requests: res[2],
+          reviews: res[3]
+        };
+        var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "passframe-my-data-" + todayIso() + ".json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        btn.disabled = false;
+      }).catch(function (err) {
+        btn.disabled = false;
+        msg.textContent = err.message || "Couldn’t put that together — try again in a moment.";
+        msg.className = "msg error";
+      });
+    });
   }
 
   var reviewRatingSelected = 0;

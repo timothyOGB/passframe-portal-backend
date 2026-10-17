@@ -661,6 +661,65 @@ app.delete("/api/reviews/:id", requireAuth, requireFounder, async (c) => {
   return c.json({ ok: true });
 });
 
+// ---------- leads (landing-page "request a consultation" form) ----------
+// The only unauthenticated write endpoint in the whole API — a prospective family
+// fills this in before any login exists for them. Kept deliberately narrow: no file
+// uploads, no way to read anything back, and a honeypot field to quietly swallow bots.
+
+app.post("/api/leads", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+
+  // Honeypot: a real visitor never sees or fills this field (hidden off-screen in the
+  // form); a bot filling every input will. Pretend success so it doesn't learn to skip it.
+  if (String(body.website || "").trim()) return c.json({ ok: true });
+
+  const parentName = String(body.parentName || "").trim();
+  const email = String(body.email || "").trim().toLowerCase();
+  if (!parentName) return c.json({ error: "Enter your name." }, 400);
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return c.json({ error: "Enter a valid email." }, 400);
+
+  const id = newId();
+  await c.env.DB.prepare(
+    `INSERT INTO leads (id, parent_name, email, phone, child_name, cohort, board, subject, message, status, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?)`
+  ).bind(
+    id, parentName, email, String(body.phone || "").trim() || null, String(body.childName || "").trim() || null,
+    body.cohort || null, body.board || null, body.subject || null, String(body.message || "").trim() || null,
+    new Date().toISOString()
+  ).run();
+
+  // Best-effort nudge to whoever can actually act on it — never blocks or fails the
+  // submission if email isn't configured or nobody founder-flagged exists yet.
+  const { results: founders } = await c.env.DB.prepare("SELECT email FROM users WHERE is_founder = 1").all();
+  founders.forEach((f) => {
+    fireAndForgetEmail(c, {
+      to: f.email,
+      subject: `New enquiry from ${parentName}${body.childName ? " (" + body.childName + ")" : ""}`,
+      html:
+        `<p><strong>${esc(parentName)}</strong> (${esc(email)}${body.phone ? ", " + esc(body.phone) : ""}) asked about tutoring` +
+        `${body.childName ? ` for ${esc(body.childName)}` : ""}${body.cohort ? `, ${esc(body.cohort)}` : ""}${body.subject ? `, ${esc(body.subject)}` : ""}.</p>` +
+        (body.message ? `<p>${esc(String(body.message).trim())}</p>` : "") +
+        `<p>Open the portal's Leads panel to follow up.</p>`
+    });
+  });
+
+  return c.json({ ok: true });
+});
+
+app.get("/api/leads", requireAuth, requireFounder, async (c) => {
+  const { results } = await c.env.DB.prepare("SELECT * FROM leads ORDER BY created_at DESC").all();
+  return c.json({ leads: results });
+});
+
+app.patch("/api/leads/:id", requireAuth, requireFounder, async (c) => {
+  const id = c.req.param("id");
+  const body = await c.req.json().catch(() => ({}));
+  const status = ["new", "contacted", "archived"].includes(body.status) ? body.status : null;
+  if (!status) return c.json({ error: "Invalid status." }, 400);
+  await c.env.DB.prepare("UPDATE leads SET status = ? WHERE id = ?").bind(status, id).run();
+  return c.json({ ok: true });
+});
+
 app.notFound((c) => c.json({ error: "Not found." }, 404));
 
 export default app;
