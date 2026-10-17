@@ -1571,6 +1571,16 @@
           '<p style="color:var(--muted);font-size:0.9rem">Enquiries from the "Request a consultation" form on the landing page.</p>' +
           '<div id="leadsList"></div>'
         ) +
+        accordionCard("Internal documents",
+          '<p style="color:var(--muted);font-size:0.9rem">Visible only to Timothy and David — not to other tutors, and not to families. For internal guides, scripts, and process docs.</p>' +
+          '<label for="intTitle">Title</label>' +
+          '<input type="text" id="intTitle" placeholder="e.g. Introductory Call guide">' +
+          '<label for="intFile">File</label>' +
+          '<input type="file" id="intFile" accept="application/pdf">' +
+          '<button class="btn small" id="intUpload" style="margin-top:12px">Upload document</button>' +
+          '<div class="msg" id="intUploadMsg"></div>' +
+          '<div id="intList" style="margin-top:16px"></div>'
+        ) +
         accordionCard("Email anyone",
           '<p style="color:var(--muted);font-size:0.9rem">Opens your email app with the message ready to send. We’ll CC ' + esc(PASSFRAME_INBOX) + ' automatically so it’s kept on file.</p>' +
           '<label for="mailTo">To</label>' +
@@ -1609,6 +1619,8 @@
       document.getElementById("openViewTutors").addEventListener("click", openViewTutorsModal);
       loadReviewsList();
       loadLeadsList();
+      wireInternalDocs();
+      loadInternalDocsList();
     }
   }
 
@@ -1652,6 +1664,77 @@
         });
       });
     }).catch(function () { listEl.innerHTML = errorStateHtml("Couldn’t load enquiries."); });
+  }
+
+  // Internal documents (category "Internal") — founder-only, both in this UI (only rendered
+  // inside the u.isFounder block in renderTutorDashboard) and server-side (the backend never
+  // sends "Internal" rows, or serves their files, to anyone whose auth.isFounder isn't true).
+  // For guides, scripts and process docs meant for Timothy and David alone.
+  function wireInternalDocs() {
+    var btn = document.getElementById("intUpload");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      var title = document.getElementById("intTitle").value.trim();
+      var fileInput = document.getElementById("intFile");
+      var msg = document.getElementById("intUploadMsg");
+      msg.textContent = ""; msg.className = "msg";
+      if (!title) { msg.textContent = "Give it a title."; msg.className = "msg error"; return; }
+      if (!fileInput.files || !fileInput.files[0]) { msg.textContent = "Choose a file."; msg.className = "msg error"; return; }
+      var formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+      formData.append("title", title);
+      formData.append("category", "Internal");
+      getStore().then(function (s) { return s.addResource(formData); })
+        .then(function () {
+          msg.textContent = "Uploaded."; msg.className = "msg ok";
+          document.getElementById("intTitle").value = "";
+          fileInput.value = "";
+          loadInternalDocsList();
+        })
+        .catch(function (err) { msg.textContent = err.message || "Upload failed — check your access."; msg.className = "msg error"; });
+    });
+  }
+
+  function loadInternalDocsList() {
+    var listEl = document.getElementById("intList");
+    if (!listEl) return;
+    listEl.innerHTML = skeletonListHtml(3);
+    getStore().then(function (s) { return s ? s.listResources() : []; }).then(function (all) {
+      var mine = all.filter(function (r) { return r.category === "Internal"; });
+      mine.sort(function (a, b) { return (a.title || "").localeCompare(b.title || "", undefined, { numeric: true }); });
+      if (!mine.length) {
+        listEl.innerHTML = '<p class="empty">No internal documents yet — add one with the uploader above.</p>';
+        return;
+      }
+      listEl.innerHTML = mine.map(function (r, i) {
+        return '<div class="res-item"><div>' + esc(r.title) +
+            '<div class="res-meta" id="intMeta' + i + '"></div></div>' +
+            '<div style="display:flex;align-items:center;gap:8px">' +
+              '<div class="actions-menu"><button class="btn secondary small actions-btn" type="button">Actions ▾</button>' +
+                '<div class="actions-dropdown">' +
+                  '<button class="menu-item" type="button" data-int-open="' + i + '">View</button>' +
+                  '<button class="menu-item" type="button" data-int-save="' + i + '">Save</button>' +
+                "</div>" +
+              "</div>" +
+              '<button class="btn danger small" data-int-remove="' + r.id + '">Remove</button>' +
+            "</div>" +
+          "</div>";
+      }).join("");
+      wireActionsMenus(listEl);
+      Array.prototype.forEach.call(listEl.querySelectorAll("[data-int-open]"), function (btn) {
+        var idx = Number(btn.getAttribute("data-int-open"));
+        btn.addEventListener("click", function () { closeAllActionsMenus(); openResourceFile(mine[idx], "intMeta" + idx); });
+      });
+      Array.prototype.forEach.call(listEl.querySelectorAll("[data-int-save]"), function (btn) {
+        var idx = Number(btn.getAttribute("data-int-save"));
+        btn.addEventListener("click", function () { closeAllActionsMenus(); downloadResourceFile(mine[idx], "intMeta" + idx); });
+      });
+      Array.prototype.forEach.call(listEl.querySelectorAll("[data-int-remove]"), function (btn) {
+        btn.addEventListener("click", function () {
+          getStore().then(function (s) { return s.deleteResource(btn.getAttribute("data-int-remove")); }).then(loadInternalDocsList);
+        });
+      });
+    }).catch(function () { listEl.innerHTML = errorStateHtml("Couldn’t load internal documents."); });
   }
 
   // Comment-style feed of every review a family has left, visible only on Timothy's

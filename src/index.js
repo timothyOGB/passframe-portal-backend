@@ -556,8 +556,12 @@ app.delete("/api/bookings/:id", requireAuth, async (c) => {
 // ---------- resources (worksheet library) ----------
 
 app.get("/api/resources", requireAuth, async (c) => {
+  const auth = c.get("auth");
   const { results } = await c.env.DB.prepare("SELECT * FROM resources ORDER BY category, subject, year_group, title").all();
-  return c.json({ resources: results });
+  // "Internal" is the founder-only document library (Timothy and David) — never sent to
+  // other tutors or to families, same boundary as /api/reviews below.
+  const visible = auth.isFounder ? results : results.filter((r) => r.category !== "Internal");
+  return c.json({ resources: visible });
 });
 
 app.post("/api/resources", requireAuth, requireFounder, async (c) => {
@@ -586,9 +590,11 @@ app.post("/api/resources", requireAuth, requireFounder, async (c) => {
 });
 
 app.get("/api/resources/file/:id", requireAuth, async (c) => {
+  const auth = c.get("auth");
   const id = c.req.param("id");
   const row = await c.env.DB.prepare("SELECT * FROM resources WHERE id = ?").bind(id).first();
   if (!row) return c.json({ error: "Not found." }, 404);
+  if (row.category === "Internal" && !auth.isFounder) return c.json({ error: "Founder access required." }, 403);
 
   // Migrated worksheets are served as static assets at their file_path directly
   // (the [assets] binding handles those before the Worker even runs). This
